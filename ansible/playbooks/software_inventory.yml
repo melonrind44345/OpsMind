@@ -1,0 +1,48 @@
+---
+# OpsMind: Software Inventory Collection Playbook
+# Detailed software package and runtime detection.
+- name: OpsMind Software Inventory
+  hosts: all
+  gather_facts: yes
+  strategy: free
+
+  vars:
+    inventory_output: /tmp/opsmind_software_inventory.json
+
+  tasks:
+    - name: Collect packages by package manager
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Detect container runtimes
+      ansible.builtin.shell:
+        cmd: |
+          echo "docker:$(docker --version 2>/dev/null || echo 'not found')"
+          echo "podman:$(podman --version 2>/dev/null || echo 'not found')"
+          echo "containerd:$(containerd --version 2>/dev/null || echo 'not found')"
+      register: container_runtimes
+      ignore_errors: yes
+      changed_when: no
+
+    - name: Detect programming languages
+      ansible.builtin.shell:
+        cmd: |
+          echo "python:$(python3 --version 2>/dev/null || python --version 2>/dev/null || echo 'not found')"
+          echo "java:$(java -version 2>&1 | head -1 || echo 'not found')"
+          echo "node:$(node --version 2>/dev/null || echo 'not found')"
+      register: language_runtimes
+      ignore_errors: yes
+      changed_when: no
+
+    - name: Save software inventory
+      ansible.builtin.copy:
+        content: |
+          {
+            "host": "{{ inventory_hostname }}",
+            "packages_count": {{ ansible_facts.packages.keys() | list | length if ansible_facts.packages is defined else 0 }},
+            "container_runtimes": "{{ container_runtimes.stdout | default('') }}",
+            "language_runtimes": "{{ language_runtimes.stdout | default('') }}",
+            "services": {{ ansible_facts.services.keys() | list | to_json if ansible_facts.services is defined else [] }}
+          }
+        dest: "/tmp/opsmind_software_inventory_{{ inventory_hostname }}.json"
+      delegate_to: localhost

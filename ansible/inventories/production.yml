@@ -1,0 +1,39 @@
+---
+# OpsMind Production Inventory Template
+# Usage: opsmind discover --inventory ansible/inventories/production.yml web-servers
+
+all:
+  children:
+    web-servers:
+      hosts:
+        web-01:
+          ansible_host: 192.168.1.10
+        web-02:
+          ansible_host: 192.168.1.11
+      vars:
+        ansible_user: opsmind
+        ansible_python_interpreter: /usr/bin/python3
+
+    database-servers:
+      hosts:
+        db-01:
+          ansible_host: 192.168.1.20
+        db-02:
+          ansible_host: 192.168.1.21
+      vars:
+        ansible_user: opsmind
+        ansible_python_interpreter: /usr/bin/python3
+
+    legacy-servers:
+      hosts:
+        legacy-app-01:
+          ansible_host: 10.0.0.100
+        legacy-app-02:
+          ansible_host: 10.0.0.101
+      vars:
+        ansible_user: root
+        ansible_python_interpreter: /usr/bin/python2.7
+
+  vars:
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+    ansible_timeout: 30

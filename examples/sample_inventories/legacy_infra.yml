@@ -1,0 +1,63 @@
+---
+# Sample Legacy Infrastructure Inventory
+# Represents a typical traditional enterprise deployment
+all:
+  children:
+    frontend:
+      hosts:
+        web-01:
+          ansible_host: 10.0.1.10
+          description: "Apache HTTPD reverse proxy"
+        web-02:
+          ansible_host: 10.0.1.11
+          description: "Apache HTTPD reverse proxy"
+      vars:
+        ansible_user: deploy
+        app_layer: "presentation"
+
+    application:
+      hosts:
+        app-01:
+          ansible_host: 10.0.2.10
+          description: "Java Tomcat application server"
+        app-02:
+          ansible_host: 10.0.2.11
+          description: "Java Tomcat application server"
+      vars:
+        ansible_user: deploy
+        app_layer: "business"
+        java_version: "8"
+        app_server: "tomcat-9"
+
+    database:
+      hosts:
+        db-master:
+          ansible_host: 10.0.3.10
+          description: "MySQL 5.7 primary database"
+        db-replica:
+          ansible_host: 10.0.3.11
+          description: "MySQL 5.7 read replica"
+      vars:
+        ansible_user: dbadmin
+        app_layer: "data"
+        db_engine: "mysql"
+        db_version: "5.7"
+
+    legacy:
+      hosts:
+        legacy-app-01:
+          ansible_host: 10.0.0.100
+          description: "CentOS 6 - legacy finance app"
+        legacy-app-02:
+          ansible_host: 10.0.0.101
+          description: "CentOS 6 - legacy reporting"
+      vars:
+        ansible_user: root
+        ansible_python_interpreter: /usr/bin/python2.7
+        end_of_life: true
+
+  vars:
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o ConnectTimeout=30'
+    environment: "production"
+    monitoring: "enabled"
+    backup_policy: "daily"

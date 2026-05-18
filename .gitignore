@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.so
+.env
+.venv/
+
+# OpsMind generated artifacts
+opsmind_report.*
+opsmind_demo_report.*
+opsmind_artifacts/
+opsmind_full_demo/
+opsmind_demo_artifacts/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+*.log
+
+# Ansible
+*.retry
+
+# Temp
+/tmp/

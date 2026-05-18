@@ -1,0 +1,16 @@
+---
+# OpsMind Ansible Collection Requirements
+collections:
+  - name: ansible.builtin
+    version: ">=2.15.0"
+
+  - name: community.general
+    version: ">=7.0.0"
+
+  - name: community.docker
+    version: ">=3.0.0"
+
+roles:
+  - name: opsmind.discovery
+    src: https://github.com/opsmind/ansible-roles
+    version: v0.1.0

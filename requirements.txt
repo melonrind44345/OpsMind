@@ -1,0 +1,32 @@
+# OpsMind v0.1.0 - Ansible-Driven Modernization Platform
+# Core Runtime
+typer>=0.12.0
+rich>=13.7.0
+pydantic>=2.5.0
+jinja2>=3.1.2
+pyyaml>=6.0
+httpx>=0.26.0
+
+# Container Integration
+docker>=7.0.0
+
+# Local Fallback Detection
+psutil>=5.9.0
+
+# Development & Testing
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+pytest-cov>=4.1.0
+pytest-mock>=3.12.0
+coverage>=7.4.0
+
+# Code Quality
+ruff>=0.3.0
+mypy>=1.8.0
+
+# Optional: Ansible Runner (required for Ansible engine)
+# ansible-runner>=2.3.0
+# ansible-core>=2.15.0
+
+# Optional: HTML Report Generation
+# weasyprint>=60.0

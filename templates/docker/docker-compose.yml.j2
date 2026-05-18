@@ -1,0 +1,52 @@
+# OpsMind Generated docker-compose.yml
+# Host: {{ hostname }}
+# Generated: {{ generated_at }}
+
+version: "3.8"
+
+services:
+  {{ hostname }}:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: {{ hostname }}-container
+    restart: unless-stopped
+    ports:
+{% for port in ports %}
+      - "{{ port }}:{{ port }}"
+{% endfor %}
+    volumes:
+      - {{ hostname }}_data:/app/data
+      - {{ hostname }}_config:/app/config
+    environment:
+      - TZ=UTC
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ cpu_cores }}"
+          memory: "{{ memory_gb }}g"
+        reservations:
+          cpus: "{{ cpu_cores * 0.5 }}"
+          memory: "{{ (memory_gb * 0.5)|int }}g"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - opsmind_network
+
+volumes:
+  {{ hostname }}_data:
+    driver: local
+  {{ hostname }}_config:
+    driver: local
+
+networks:
+  opsmind_network:
+    driver: bridge

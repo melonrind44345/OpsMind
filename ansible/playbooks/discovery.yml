@@ -1,0 +1,66 @@
+---
+# OpsMind: Comprehensive System Discovery Playbook
+# Collects hardware, software, and configuration data from target hosts.
+- name: OpsMind System Discovery
+  hosts: all
+  gather_facts: yes
+  gather_subset:
+    - all
+  strategy: free
+  serial: 10
+
+  vars:
+    opsmind_output_dir: /tmp/opsmind_discovery
+    opsmind_discovery_id: "{{ lookup('pipe', 'date +%Y%m%d%H%M%S') }}"
+
+  tasks:
+    - name: Ensure output directory exists
+      ansible.builtin.file:
+        path: "{{ opsmind_output_dir }}"
+        state: directory
+        mode: "0755"
+      delegate_to: localhost
+      run_once: yes
+
+    - name: Collect basic system facts
+      ansible.builtin.setup:
+        gather_subset:
+          - all
+      register: system_facts
+
+    - name: Collect package information
+      ansible.builtin.package_facts:
+        manager: auto
+      register: package_facts
+      ignore_errors: yes
+
+    - name: Collect service information
+      ansible.builtin.service_facts:
+      register: service_facts
+      ignore_errors: yes
+
+    - name: Collect listening ports
+      community.general.listen_ports_facts:
+      register: port_facts
+      ignore_errors: yes
+
+    - name: Save discovery results
+      ansible.builtin.copy:
+        content: |
+          {
+            "ansible_facts": {{ ansible_facts | to_json }},
+            "packages": {{ packages | default({}) | to_json }},
+            "services": {{ services | default({}) | to_json }}
+          }
+        dest: "/tmp/opsmind_discovery/{{ inventory_hostname }}.json"
+      delegate_to: localhost
+
+    - name: Display discovery summary
+      ansible.builtin.debug:
+        msg:
+          - "Host: {{ inventory_hostname }}"
+          - "OS: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+          - "CPU: {{ ansible_processor_cores }} cores / {{ ansible_processor_vcpus }} threads"
+          - "Memory: {{ ansible_memtotal_mb | int // 1024 }}GB total"
+          - "Disks: {{ ansible_mounts | length }} mount points"
+          - "Packages: {{ packages.keys() | list | length if packages is defined else 'N/A' }}"

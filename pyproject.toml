@@ -1,0 +1,102 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsmind"
+version = "0.1.0"
+description = "Ansible-driven modernization assessment and transformation platform for legacy enterprise systems"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "OpsMind Team"},
+]
+
+keywords = ["ansible", "modernization", "containers", "assessment", "migration"]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Systems Administration",
+    "Topic :: System :: Installation/Setup",
+]
+
+dependencies = [
+    "typer>=0.12.0",
+    "rich>=13.7.0",
+    "pydantic>=2.5.0",
+    "jinja2>=3.1.2",
+    "pyyaml>=6.0",
+    "httpx>=0.26.0",
+    "docker>=7.0.0",
+    "psutil>=5.9.0",
+]
+
+[project.urls]
+Homepage = "https://opsmind.dev"
+Repository = "https://github.com/opsmind/opsmind"
+
+[project.scripts]
+opsmind = "opsmind.cli.main:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["opsmind*"]
+exclude = ["tests*", "examples*"]
+
+[tool.setuptools.package-data]
+"opsmind" = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "slow: Slow tests (performance benchmarks)",
+    "ansible: Tests requiring Ansible",
+]
+
+[tool.coverage.run]
+source = ["opsmind"]
+branch = true
+omit = ["tests/*", "examples/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "pass",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+disallow_untyped_defs = true
+disallow_any_unimported = false
+warn_unused_ignores = true
+
+[tool.opsmind]
+# Default OpsMind configuration
+discovery_method = "auto"
+ansible_timeout = 10
+max_retries = 2
+cache_enabled = true
+cache_ttl = 300  # seconds
+parallel_hosts = 10
+log_level = "INFO"

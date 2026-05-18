@@ -1,0 +1,99 @@
+{
+  "ansible_hostname": "test-server-01",
+  "ansible_fqdn": "test-server-01.example.com",
+  "ansible_system": "Linux",
+  "ansible_distribution": "CentOS",
+  "ansible_distribution_version": "7.9",
+  "ansible_distribution_major_version": "7",
+  "ansible_os_family": "RedHat",
+  "ansible_kernel": "3.10.0-1160.el7.x86_64",
+  "ansible_architecture": "x86_64",
+  "ansible_processor": ["GenuineIntel", "Intel(R) Xeon(R) CPU E5-2680 v3 @ 2.50GHz"],
+  "ansible_processor_cores": 4,
+  "ansible_processor_vcpus": 8,
+  "ansible_processor_count": 2,
+  "ansible_processor_threads_per_core": 2,
+  "ansible_memtotal_mb": 16384,
+  "ansible_memfree_mb": 2048,
+  "ansible_swaptotal_mb": 4096,
+  "ansible_swapfree_mb": 1024,
+  "ansible_mounts": [
+    {
+      "mount": "/",
+      "device": "/dev/sda1",
+      "fstype": "ext4",
+      "size_total": 107374182400,
+      "size_used": 91268055040,
+      "size_available": 16106127360,
+      "options": "rw,relatime"
+    },
+    {
+      "mount": "/data",
+      "device": "/dev/sdb1",
+      "fstype": "xfs",
+      "size_total": 536870912000,
+      "size_used": 450971566080,
+      "size_available": 85899345920,
+      "options": "rw,noatime"
+    }
+  ],
+  "ansible_interfaces": ["eth0", "eth1", "lo"],
+  "ansible_eth0": {
+    "macaddress": "00:1a:2b:3c:4d:5e",
+    "ipv4": {"address": "192.168.1.100", "netmask": "255.255.255.0"},
+    "ipv6": {"address": "fe80::21a:2bff:fe3c:4d5e"},
+    "active": true,
+    "type": "ether",
+    "speed": 1000,
+    "mtu": 1500
+  },
+  "ansible_eth1": {
+    "macaddress": "00:1a:2b:3c:4d:5f",
+    "ipv4": {"address": "10.0.0.100", "netmask": "255.255.0.0"},
+    "active": true,
+    "type": "ether",
+    "speed": 10000,
+    "mtu": 9000
+  },
+  "ansible_lo": {
+    "macaddress": "00:00:00:00:00:00",
+    "ipv4": {"address": "127.0.0.1", "netmask": "255.0.0.0"},
+    "active": true,
+    "type": "loopback"
+  },
+  "ansible_services": {
+    "httpd": {"name": "httpd", "state": "running", "enabled": true},
+    "mysqld": {"name": "mysqld", "state": "running", "enabled": true},
+    "crond": {"name": "crond", "state": "running", "enabled": true},
+    "network": {"name": "network", "state": "running", "enabled": true},
+    "sshd": {"name": "sshd", "state": "running", "enabled": true},
+    "postfix": {"name": "postfix", "state": "running", "enabled": true},
+    "rsyslog": {"name": "rsyslog", "state": "running", "enabled": true},
+    "iptables": {"name": "iptables", "state": "stopped", "enabled": false}
+  },
+  "ansible_packages": {
+    "kernel": [{"version": "3.10.0-1160.el7", "arch": "x86_64"}],
+    "httpd": [{"version": "2.4.6-97.el7", "arch": "x86_64"}],
+    "mysql-server": [{"version": "5.7.44-1.el7", "arch": "x86_64"}],
+    "php": [{"version": "7.4.33-1.el7", "arch": "x86_64"}],
+    "openssh-server": [{"version": "7.4p1-21.el7", "arch": "x86_64"}],
+    "docker": [{"version": "24.0.7-1.el7", "arch": "x86_64"}],
+    "curl": [{"version": "7.29.0-59.el7", "arch": "x86_64"}]
+  },
+  "ansible_selinux": {
+    "enabled": false,
+    "mode": "disabled",
+    "config_mode": "disabled",
+    "policy": "targeted"
+  },
+  "ansible_firewalld": {
+    "status": "not running"
+  },
+  "ansible_date_time": {
+    "epoch": "1700000000"
+  },
+  "ansible_system_vendor": "Dell Inc.",
+  "ansible_product_name": "PowerEdge R730",
+  "ansible_bios_version": "2.12.0",
+  "ansible_virtualization_type": "NA"
+}

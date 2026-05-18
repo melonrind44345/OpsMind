@@ -1,0 +1,43 @@
+## Host: {{ hostname }}
+
+**Feasibility Score**: {{ score }}/100
+**Complexity**: {{ complexity }}
+**Risk Level**: {{ risk_level }}
+**Data Source**: {{ data_source }}
+
+{{ summary }}
+
+### Dimension Scores
+
+{% for dim in dimensions %}
+- **{{ dim.name }}**: {{ dim.score }}/100 (weight: {{ dim.weight }})
+{% if dim.findings %}
+  *Findings*:
+{% for finding in dim.findings %}
+  - {{ finding }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+
+### Issues Found
+
+{% if issues %}
+{% for issue in issues %}
+- **[{{ issue.severity }}]** {{ issue.title }}
+{% endfor %}
+{% else %}
+No significant issues found.
+{% endif %}
+
+### Resource Sizing
+
+- CPU: {{ cpu_cores }} cores
+- Memory: {{ memory_gb }} GB
+- Storage: {{ storage_gb }} GB
+- Replicas: {{ replicas }}
+
+### Migration Strategy
+
+- **Strategy**: {{ strategy_type }}
+- **Estimated Effort**: {{ effort_days }} days
+- **Required Skills**: {{ skills | join(", ") }}

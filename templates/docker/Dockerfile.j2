@@ -1,0 +1,33 @@
+# OpsMind Generated Dockerfile
+# Host: {{ hostname }}
+# Generated: {{ generated_at }}
+# Strategy: {{ strategy }}
+# Feasibility: {{ score }}/100
+
+FROM {{ base_image }}
+
+LABEL opsmind.host="{{ hostname }}" \
+      opsmind.generated="{{ generated_at }}" \
+      opsmind.version="0.1.0"
+
+# System dependencies
+RUN {{ install_cmd }} \
+    {{ packages | join(' \\\n    ') }} \
+    && rm -rf /var/lib/apt/lists/* /var/cache/yum/*
+
+# Application directory
+WORKDIR /app
+
+# Copy application files
+COPY . .
+
+# Expose ports
+{% for port in ports %}
+EXPOSE {{ port }}
+{% endfor %}
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/ || exit 1
+
+CMD ["bash"]

@@ -1,0 +1,55 @@
+#!/bin/bash
+# OpsMind Pre-flight Check Script
+# Generated for: {{ hostname }}
+# Checks container host readiness
+
+set -euo pipefail
+
+echo "============================================"
+echo " OpsMind Pre-flight Check: {{ hostname }}"
+echo " Generated: {{ generated_at }}"
+echo "============================================"
+echo ""
+
+# Check Docker
+echo "[1/5] Checking Docker installation..."
+if command -v docker &>/dev/null; then
+    echo "  ✓ Docker: $(docker --version)"
+else
+    echo "  ✗ Docker not installed"
+    echo "    Install: https://docs.docker.com/engine/install/"
+fi
+
+# Check resources
+echo ""
+echo "[2/5] Checking system resources..."
+echo "  Memory: $(free -h | awk '/^Mem:/ {print $2}')"
+echo "  CPU: $(nproc) cores"
+echo "  Disk: $(df -h / | awk 'NR==2 {print $4}') available"
+
+# Check kernel
+echo ""
+echo "[3/5] Checking kernel compatibility..."
+echo "  Kernel: $(uname -r)"
+if [ "$(uname -s)" = "Linux" ]; then
+    echo "  ✓ Linux kernel detected"
+else
+    echo "  ⚠ Non-Linux kernel - verify container support"
+fi
+
+# Check network
+echo ""
+echo "[4/5] Checking network..."
+echo "  Hostname: $(hostname)"
+echo "  IP: $(hostname -I 2>/dev/null | awk '{print $1}')"
+
+# Check storage
+echo ""
+echo "[5/5] Checking storage..."
+df -h / | awk 'NR==2 {print "  Root: " $3 " used / " $2 " total (" $5 ")"}'
+
+echo ""
+echo "============================================"
+echo " Pre-flight check complete"
+echo " Recommended: {{ cpu_cores }} CPU / {{ memory_gb }}GB RAM"
+echo "============================================"

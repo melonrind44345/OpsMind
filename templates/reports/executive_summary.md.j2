@@ -1,0 +1,31 @@
+# OpsMind Containerization Assessment Report
+
+**Generated**: {{ generated_at }}
+**Tool Version**: {{ tool_version }}
+**Hosts Assessed**: {{ total_hosts }}
+
+---
+
+## Executive Summary
+
+This report assesses **{{ total_hosts }} host(s)** for containerization readiness.
+
+**Overall Feasibility Score**: **{{ average_score }}/100**
+
+| Complexity | Count |
+|------------|-------|
+| Simple | {{ simple_count }} |
+| Moderate | {{ moderate_count }} |
+| Complex | {{ complex_count }} |
+| Blocker | {{ blocker_count }} |
+
+### Methodology
+
+This assessment uses the OpsMind Weighted Evaluation Algorithm v1, evaluating systems across four dimensions:
+
+- **Hardware Compatibility (30%)**: CPU architecture, cores, memory capacity, disk space
+- **Software Support (30%)**: OS version, kernel, package ecosystem, runtime compatibility
+- **Configuration Complexity (20%)**: Services, dependencies, data volumes, network topology
+- **Security Baseline (20%)**: Firewall status, SELinux, pending updates, open ports
+
+Data was collected via: **{{ data_source }}**
