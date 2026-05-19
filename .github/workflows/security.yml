@@ -1,0 +1,102 @@
+name: Security Audit
+
+on:
+  schedule:
+    - cron: "37 1 * * 1"    # Every Monday at 09:37 Asia/Shanghai
+  workflow_dispatch:          # Manual trigger
+
+jobs:
+  dependency-audit:
+    name: "Dependency Audit"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python CI
+        uses: ./.github/actions/setup-python-ci
+        with:
+          python-version: "3.11"
+
+      - name: Safety — dependency vulnerability scan
+        continue-on-error: true
+        run: |
+          pip freeze > /tmp/requirements-frozen.txt
+          safety check --file=/tmp/requirements-frozen.txt --full-report \
+            --save-json=safety-report.json || true
+
+      - name: Upload Safety report
+        uses: actions/upload-artifact@v4
+        with:
+          name: safety-report
+          path: safety-report.json
+          retention-days: 30
+
+      - name: Safety summary
+        if: always()
+        run: |
+          if [ -f safety-report.json ]; then
+            echo "### Safety Dependency Audit" >> $GITHUB_STEP_SUMMARY
+            python -c "
+          import json
+          with open('safety-report.json') as f:
+              data = json.load(f)
+          vulns = data.get('vulnerabilities', [])
+          if vulns:
+              print(f'| Package | Severity | CVE |')
+              print(f'|---------|----------|-----|')
+              for v in vulns:
+                  print(f'| {v.get(\"package_name\",\"?\")} | {v.get(\"severity\",\"?\")} | {v.get(\"cve\",\"N/A\")} |')
+          else:
+              print('No known vulnerabilities found.')
+          " >> $GITHUB_STEP_SUMMARY
+          fi
+
+  code-sast:
+    name: "Code SAST"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python CI
+        uses: ./.github/actions/setup-python-ci
+        with:
+          python-version: "3.11"
+
+      - name: Bandit — SAST scan
+        continue-on-error: true
+        run: |
+          bandit -r src/opsmind/ -ll -f json -o bandit-report.json || true
+
+      - name: Upload Bandit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: bandit-report.json
+          retention-days: 30
+
+  docker-scan:
+    name: "Docker Image Scan"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build local image for scanning
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: opsmind:scan
+          cache-from: type=gha
+
+      - name: Trivy — vulnerability scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: opsmind:scan
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "HIGH,CRITICAL"
+
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif

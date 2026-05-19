@@ -138,6 +138,47 @@ Command → Discovery Engine → Assessment Evaluators → Report Generators →
 
 ---
 
+## 🔄 CI/CD Pipeline
+
+[![CI](https://github.com/melonrind44345/OpsMind/actions/workflows/ci.yml/badge.svg)](https://github.com/melonrind44345/OpsMind/actions/workflows/ci.yml)
+[![Security Audit](https://github.com/melonrind44345/OpsMind/actions/workflows/security.yml/badge.svg)](https://github.com/melonrind44345/OpsMind/actions/workflows/security.yml)
+
+OpsMind uses **GitHub Actions** as its CI/CD platform.
+
+### Pipeline Architecture
+
+```mermaid
+graph LR
+    A[Push/PR] --> B[Quality<br/>Ruff + Mypy + Bandit]
+    B --> C[Test Matrix<br/>Python 3.11/3.12]
+    C --> D[Coverage<br/>Threshold 80%]
+    D --> E[Build Check]
+    E --> F{Publish?}
+    F -->|Tag| G[PyPI + GHCR]
+```
+
+### Quick Start
+
+```bash
+# Run the full CI pipeline locally
+./scripts/ci/local-test.sh
+
+# Run a specific stage
+./scripts/ci/local-test.sh --stage quality
+./scripts/ci/local-test.sh --stage test
+
+# Skip security scans for faster feedback
+./scripts/ci/local-test.sh --skip-security
+
+# Simulate GitHub Actions locally with act
+act push --job quality
+act pull_request
+```
+
+> See [CI/CD Guide](docs/CI.md) for full GitHub Actions setup, pipeline stage details, and troubleshooting.
+
+---
+
 ## 🧪 Testing
 
 ```bash
@@ -163,7 +204,8 @@ pytest tests/ -m slow -v
 - [Developer Guide](docs/DEVELOPER_GUIDE.md) — Contributing, code style, tooling
 - [Discovery Methods](docs/DISCOVERY_METHODS.md) — Ansible, Native, Mock detailed guide
 - [Ansible Integration](docs/ANSIBLE_INTEGRATION.md) — Ansible setup and configuration
-- [CI/CD Design](docs/CICD_DESIGN.md) — Pipeline integration and automation
+- [CI/CD Design](docs/CICD_DESIGN.md) — Pipeline design and architecture
+- [CI/CD Guide](docs/CI.md) — GitHub Actions setup, configuration, and troubleshooting
 
 ---
 

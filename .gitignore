@@ -29,7 +29,20 @@ Thumbs.db
 .pytest_cache/
 htmlcov/
 .coverage
+coverage.json
+coverage-*.xml
+junit-*.xml
 *.log
+
+# CI/CD artifacts
+bandit-report.json
+safety-report.json
+build-info.txt
+trivy-results.sarif
+
+# act (local GitHub Actions runner)
+.secrets
+.actrc
 
 # Ansible
 *.retry

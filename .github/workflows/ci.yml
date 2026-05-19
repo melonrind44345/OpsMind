@@ -1,0 +1,180 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PACKAGE_DIR: src/opsmind
+  COVERAGE_THRESHOLD: "80"
+
+jobs:
+  # ==========================================================================
+  # Quality gate: lint + format + type check + security (parallel)
+  # ==========================================================================
+  quality:
+    name: "Quality (${{ matrix.check }})"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        check: [ruff-lint, ruff-format, mypy, bandit]
+        include:
+          - check: ruff-lint
+            run: ruff check $PACKAGE_DIR/ tests/
+          - check: ruff-format
+            run: ruff format --check $PACKAGE_DIR/ tests/
+          - check: mypy
+            run: mypy $PACKAGE_DIR/
+          - check: bandit
+            run: bandit -r $PACKAGE_DIR/ -ll
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python CI
+        uses: ./.github/actions/setup-python-ci
+        with:
+          python-version: "3.11"
+
+      - name: Run ${{ matrix.check }}
+        run: ${{ matrix.run }}
+
+  # ==========================================================================
+  # Test matrix: unit + integration tests across Python versions
+  # ==========================================================================
+  test:
+    name: "Test (Python ${{ matrix.python-version }})"
+    runs-on: ubuntu-latest
+    needs: quality
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python CI
+        uses: ./.github/actions/setup-python-ci
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run unit tests
+        run: >
+          pytest tests/unit/
+          -v
+          --tb=short
+          -m "not ansible"
+          --junitxml=junit-unit-py${{ matrix.python-version }}.xml
+          --cov=opsmind
+          --cov-report=xml:coverage-unit-py${{ matrix.python-version }}.xml
+          --cov-report=term
+          --no-header
+
+      - name: Run integration tests
+        run: >
+          pytest tests/integration/
+          -v
+          --tb=long
+          --junitxml=junit-integration-py${{ matrix.python-version }}.xml
+          --cov=opsmind
+          --cov-append
+          --cov-report=xml:coverage-integration-py${{ matrix.python-version }}.xml
+          --cov-report=term
+          --no-header
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-py${{ matrix.python-version }}
+          path: |
+            junit-*.xml
+            coverage-*.xml
+          retention-days: 7
+
+  # ==========================================================================
+  # Coverage aggregation and threshold check
+  # ==========================================================================
+  coverage:
+    name: "Coverage Report"
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python CI
+        uses: ./.github/actions/setup-python-ci
+        with:
+          python-version: "3.11"
+
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          merge-multiple: true
+
+      - name: Combine and report coverage
+        run: |
+          pip install coverage
+          coverage combine coverage-*.xml 2>/dev/null || coverage combine 2>/dev/null || true
+          coverage report --fail-under=${{ env.COVERAGE_THRESHOLD }}
+          coverage html -d htmlcov
+          coverage json -o coverage.json
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            htmlcov/
+            coverage.json
+          retention-days: 14
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          if [ -f coverage.json ]; then
+            COV_PCT=$(python -c "import json; print(json.load(open('coverage.json'))['totals']['percent_covered'])")
+            echo "### Coverage: ${COV_PCT}% (threshold: ${{ env.COVERAGE_THRESHOLD }}%)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ==========================================================================
+  # Build check: verify package can be built
+  # ==========================================================================
+  build-check:
+    name: "Build Check"
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python CI
+        uses: ./.github/actions/setup-python-ci
+        with:
+          python-version: "3.11"
+
+      - name: Build package
+        run: python -m build
+
+      - name: Verify package
+        run: twine check dist/*
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7

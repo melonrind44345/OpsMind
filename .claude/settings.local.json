@@ -9,7 +9,13 @@
       "Bash(sudo apt-get update -qq)",
       "Bash(sudo apt-get install -y -qq python3-pip)",
       "Bash(.venv/bin/pip install *)",
-      "Bash(opsmind *)"
+      "Bash(opsmind *)",
+      "Bash(rm /workspaces/OpsMind/Jenkinsfile)",
+      "Bash(rm -rf /workspaces/OpsMind/scripts/jenkins/)",
+      "Bash(rm -rf /workspaces/OpsMind/docker-jenkins-agent/)",
+      "Bash(rm -rf /workspaces/OpsMind/.jenkins/)",
+      "Bash(./scripts/ci/local-test.sh *)",
+      "Bash(git *)"
     ]
   }
 }

@@ -12,6 +12,7 @@
 - [4. 如何添加新的报告格式](#4-如何添加新的报告格式)
 - [5. 代码规范](#5-代码规范)
 - [6. 测试要求](#6-测试要求)
+- [7. CI/CD 开发流程 (GitHub Actions)](#7-cicd-开发流程)
 
 ---
 
@@ -901,11 +902,192 @@ branch = true
 
 ---
 
+## 7. CI/CD 开发流程
+
+### 7.1 GitHub Actions 流水线工作原理
+
+OpsMind 使用 GitHub Actions 作为 CI/CD 平台，包含以下工作流：
+
+| 工作流 | 文件 | 触发条件 | 用途 |
+|--------|------|---------|------|
+| **CI** | `.github/workflows/ci.yml` | push/PR to main, develop | 代码质量 + 测试 + 构建验证 |
+| **Release** | `.github/workflows/release.yml` | tag `v*.*.*` | PyPI 发布 + Docker 推送 + GitHub Release |
+| **Docker** | `.github/workflows/docker.yml` | push to main, PR (Dockerfile 变更) | Docker 镜像构建 + 安全扫描 |
+| **Security** | `.github/workflows/security.yml` | 每周一 09:37 CST | 依赖漏洞 + SAST + 镜像扫描 |
+
+CI 流水线阶段：
+
+```
+Quality (并行: ruff-lint, ruff-format, mypy, bandit)
+    │
+    ▼
+Test Matrix (并行: Python 3.11, 3.12 — unit + integration)
+    │
+    ▼
+Coverage Report (合并覆盖率, 检查 80% 阈值)
+    │
+    ▼
+Build Check (构建 wheel/sdist + twine 验证)
+```
+
+**关键设计决策**：
+
+| 决策 | 原因 |
+|------|------|
+| Quality 使用矩阵并行 | 四项检查独立运行，最快 ~30s 完成全部 |
+| 测试矩阵多 Python 版本 | 验证 3.11/3.12 兼容性 |
+| fail-fast: false | 不让一个版本失败取消其他测试 |
+| 代码质量在测试前运行 | 快速失败 — lint 错误无需等待测试完成 |
+| 覆盖率阈值 80% | 代码质量基线，与 pyproject.toml 配置一致 |
+| Security 定时运行 | 每周扫描依赖漏洞，不阻断日常开发 |
+
+### 7.2 流水线文件结构
+
+```
+.
+├── .github/
+│   ├── actions/
+│   │   └── setup-python-ci/action.yml     # 复用：Python + 缓存 + 依赖安装
+│   ├── workflows/
+│   │   ├── ci.yml                         # CI 主流水线
+│   │   ├── docker.yml                     # Docker 镜像构建
+│   │   ├── release.yml                    # 发布到 PyPI + GHCR
+│   │   └── security.yml                   # 定时安全扫描
+│   └── dependabot.yml                     # 依赖自动更新
+└── scripts/ci/
+    └── local-test.sh                      # 本地 CI 模拟器
+```
+
+### 7.3 日常开发工作流
+
+```bash
+# 1. 修改代码
+vim src/opsmind/core/engine.py
+
+# 2. 运行本地 CI 检查（推荐在推送前运行）
+./scripts/ci/local-test.sh
+
+# 3. 仅运行 lint（快速反馈）
+./scripts/ci/local-test.sh --stage quality
+
+# 4. 运行测试 + 覆盖率
+./scripts/ci/local-test.sh --stage test
+
+# 5. 全部通过后推送
+git add -A && git commit -m "feat: description" && git push
+
+# 6. 在 GitHub 上查看 CI 结果
+# Actions tab 或 PR 页面底部自动显示检查状态
+```
+
+### 7.4 如何添加新的 CI 检查
+
+要在 GitHub Actions 中添加新的检查，编辑 `.github/workflows/ci.yml`：
+
+**步骤 1**：在 quality job 的 matrix 中添加新条目：
+
+```yaml
+quality:
+  strategy:
+    matrix:
+      check: [ruff-lint, ruff-format, mypy, bandit, your-new-check]
+      include:
+        # ... existing checks ...
+        - check: your-new-check
+          run: your-tool src/opsmind/
+```
+
+**步骤 2**：如需要独立 job，参考现有 pattern 添加：
+
+```yaml
+your-new-job:
+  name: "Your Check"
+  runs-on: ubuntu-latest
+  needs: quality
+  steps:
+    - uses: actions/checkout@v4
+    - name: Setup Python CI
+      uses: ./.github/actions/setup-python-ci
+      with:
+        python-version: "3.11"
+    - name: Run check
+      run: your-check-command
+```
+
+**步骤 3**：更新 `scripts/ci/local-test.sh` 中的对应 stage 函数。
+
+### 7.5 本地 vs CI 差异
+
+| 方面 | 本地 (`local-test.sh`) | GitHub Actions |
+|------|------------------------|----------------|
+| 环境 | venv 中的系统 Python | GitHub-hosted `ubuntu-latest` runner |
+| Python 版本 | 单一版本 | 矩阵 3.11 + 3.12 |
+| 缓存 | pip 本地缓存 | actions/cache 跨构建缓存 |
+| 产物保留 | 当前目录 | 上传为 workflow artifacts（7-14 天） |
+| 失败处理 | 可选继续执行 | 按 job 依赖关系控制 |
+
+**消除差异的技巧**：使用 Docker 模拟 CI 环境：
+
+```bash
+docker run --rm -v $(pwd):/workspace -w /workspace python:3.11-slim \
+  bash -c "pip install -e . && pytest tests/ -v"
+```
+
+使用 `act` 完整模拟 GitHub Actions：
+
+```bash
+act push --job quality
+act pull_request
+```
+
+### 7.6 故障排查指南
+
+**问题：`ruff check` 在 CI 失败但本地通过**
+
+```bash
+# CI 每次都 pip install 最新版本，确保本地也使用最新版本
+pip install --upgrade ruff
+ruff check src/opsmind/ tests/
+```
+
+**问题：覆盖率在 CI 中低于本地**
+
+CI 运行 `coverage combine` 合并多个版本的覆盖数据。如果某个 Python 版本的测试失败，其覆盖数据会缺失，导致总体覆盖率下降。
+
+**问题：`mypy` 错误与 IDE 不一致**
+
+CI 使用 `ubuntu-latest` runner，本地可能安装了更多系统包。缓存策略也可能影响结果。
+
+```bash
+# 在 CI 等效环境中验证
+docker run --rm -v $(pwd):/workspace -w /workspace python:3.11-slim \
+  bash -c "pip install -e . mypy && mypy src/opsmind/"
+```
+
+**问题：如何在本地 trigger security workflow**
+
+```bash
+# security workflow 是定时触发，本地用 local-test.sh
+./scripts/ci/local-test.sh --stage security
+```
+
+### 7.7 最佳实践
+
+1. **推送前本地验证**：至少运行 `./scripts/ci/local-test.sh --stage quality`
+2. **小步提交**：频繁的原子提交比大规模提交更容易通过 CI
+3. **先修 lint 再修逻辑**：Ruff 支持自动修复：`ruff check --fix src/opsmind/`
+4. **新功能要带测试**：覆盖率低于 80% 会导致构建失败
+5. **使用 `./scripts/ci/local-test.sh --skip-security`** 加速快速迭代
+6. **查看 workflow artifacts**：构建失败时下载 JUnit/coverage 报告分析问题
+7. **关注 dependabot PR**：`.github/dependabot.yml` 自动提交依赖更新，及时合并
+
+---
+
 ## 附录：开发环境配置
 
 ```bash
 # 创建虚拟环境
-python3.11 -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 
 # 安装开发依赖
@@ -943,4 +1125,10 @@ pytest tests/ -x -v
 # 生成 HTML 覆盖率报告
 pytest --cov=opsmind --cov-report=html tests/
 open htmlcov/index.html
+
+# 运行本地 CI 完整流水线
+./scripts/ci/local-test.sh
+
+# 模拟 GitHub Actions
+act push --job quality
 ```

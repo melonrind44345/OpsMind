@@ -1,7 +1,7 @@
 # OpsMind CI/CD Pipeline Design
 
 > **Version**: 0.1.0 | **Last Updated**: 2026-05-16
-> **Target CI Platform**: GitHub Actions (可适配 GitLab CI/Jenkins)
+> **Target CI Platform**: GitHub Actions
 
 ---
 

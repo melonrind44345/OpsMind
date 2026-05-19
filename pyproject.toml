@@ -36,6 +36,27 @@ dependencies = [
     "psutil>=5.9.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.3.0",
+    "mypy>=1.8.0",
+    "bandit",
+    "safety",
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "coverage>=7.4.0",
+    "build",
+    "twine",
+]
+ansible = [
+    "ansible-core>=2.15.0",
+    "ansible-lint",
+]
+docs = [
+    "weasyprint>=60.0",
+]
+
 [project.urls]
 Homepage = "https://opsmind.dev"
 Repository = "https://github.com/opsmind/opsmind"

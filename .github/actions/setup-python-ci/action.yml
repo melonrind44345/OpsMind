@@ -1,0 +1,56 @@
+name: "Setup Python CI Environment"
+description: "Install Python, restore pip/mypy cache, and install project dependencies"
+
+inputs:
+  python-version:
+    description: "Python version to use"
+    required: false
+    default: "3.11"
+  install-dev:
+    description: "Install dev/test dependencies (ruff, mypy, pytest, etc.)"
+    required: false
+    default: "true"
+  install-project:
+    description: "Install the project in editable mode"
+    required: false
+    default: "true"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python ${{ inputs.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Cache pip packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: pip-${{ runner.os }}-py${{ inputs.python-version }}-${{ hashFiles('requirements.txt', 'pyproject.toml') }}
+        restore-keys: |
+          pip-${{ runner.os }}-py${{ inputs.python-version }}-
+          pip-${{ runner.os }}-
+
+    - name: Cache mypy
+      uses: actions/cache@v4
+      with:
+        path: .mypy_cache
+        key: mypy-${{ runner.os }}-py${{ inputs.python-version }}-${{ hashFiles('src/**/*.py') }}
+        restore-keys: |
+          mypy-${{ runner.os }}-py${{ inputs.python-version }}-
+          mypy-${{ runner.os }}-
+
+    - name: Upgrade pip and core tools
+      shell: bash
+      run: pip install --upgrade pip setuptools wheel
+
+    - name: Install project (editable)
+      if: inputs.install-project == 'true'
+      shell: bash
+      run: pip install -e .
+
+    - name: Install dev dependencies
+      if: inputs.install-dev == 'true'
+      shell: bash
+      run: pip install ruff mypy bandit safety pytest pytest-cov pytest-mock coverage build twine
