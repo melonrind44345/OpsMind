@@ -5,14 +5,14 @@ import logging
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class StructuredFormatter(logging.Formatter):
     """JSON-structured log formatter."""
 
     def format(self, record: logging.LogRecord) -> str:
-        log_entry: Dict[str, Any] = {
+        log_entry: dict[str, Any] = {
             "timestamp": datetime.fromtimestamp(record.created).isoformat(),
             "level": record.levelname,
             "name": record.name,
@@ -81,7 +81,7 @@ class OpsMindLogger:
             self.logger.critical(message)
 
 
-_default_logger: Optional[OpsMindLogger] = None
+_default_logger: OpsMindLogger | None = None
 
 
 def get_logger(name: str = "opsmind", level: str = "INFO") -> OpsMindLogger:

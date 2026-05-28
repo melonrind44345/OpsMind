@@ -1,9 +1,8 @@
 """Base discovery engine interface."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
 
-from opsmind.schemas.discovery import DiscoveryResult, DiscoveryMethod, DiscoveryMetadata
+from opsmind.schemas.discovery import DiscoveryMetadata, DiscoveryMethod, DiscoveryResult
 
 
 class BaseDiscoveryEngine(ABC):
@@ -27,7 +26,7 @@ class BaseDiscoveryEngine(ABC):
         ...
 
     @abstractmethod
-    def discover_group(self, hosts: List[str], parallel: bool = True) -> DiscoveryResult:
+    def discover_group(self, hosts: list[str], parallel: bool = True) -> DiscoveryResult:
         """Discover multiple hosts, optionally in parallel."""
         ...
 

@@ -4,8 +4,6 @@ Evaluates how suitable a system is for containerization across
 multiple dimensions with weighted scoring.
 """
 
-from typing import Any, Dict, List
-
 from opsmind.schemas.assessment import (
     AssessmentDimension,
     ComplexityLevel,
@@ -57,14 +55,14 @@ class ContainerizationFeasibilityEvaluator:
 
         overall_score = self._calculate_overall(dimension_scores)
 
-        all_issues: List[IssueDetail] = []
+        all_issues: list[IssueDetail] = []
         for ds in dimension_scores:
             all_issues.extend(self._findings_to_issues(ds, discovery_data))
 
         complexity = self._determine_complexity(overall_score, all_issues)
         risk = self._determine_risk(overall_score, all_issues)
 
-        all_recommendations: List[str] = []
+        all_recommendations: list[str] = []
         for ds in dimension_scores:
             all_recommendations.extend(ds.recommendations)
 
@@ -83,9 +81,9 @@ class ContainerizationFeasibilityEvaluator:
     def _assess_hardware(self, data: UnifiedDiscoveryModel) -> DimensionScore:
         """Assess hardware compatibility for containerization."""
         score = 100.0
-        findings: List[str] = []
-        issues: List[str] = []
-        recommendations: List[str] = []
+        findings: list[str] = []
+        issues: list[str] = []
+        recommendations: list[str] = []
 
         hw = data.hardware
 
@@ -140,9 +138,9 @@ class ContainerizationFeasibilityEvaluator:
     def _assess_software(self, data: UnifiedDiscoveryModel) -> DimensionScore:
         """Assess software environment compatibility for containerization."""
         score = 100.0
-        findings: List[str] = []
-        issues: List[str] = []
-        recommendations: List[str] = []
+        findings: list[str] = []
+        issues: list[str] = []
+        recommendations: list[str] = []
 
         sw = data.software
 
@@ -215,9 +213,9 @@ class ContainerizationFeasibilityEvaluator:
     def _assess_config_complexity(self, data: UnifiedDiscoveryModel) -> DimensionScore:
         """Assess configuration complexity for containerization."""
         score = 100.0
-        findings: List[str] = []
-        issues: List[str] = []
-        recommendations: List[str] = []
+        findings: list[str] = []
+        issues: list[str] = []
+        recommendations: list[str] = []
 
         hw = data.hardware
         sw = data.software
@@ -260,9 +258,9 @@ class ContainerizationFeasibilityEvaluator:
     def _assess_security(self, data: UnifiedDiscoveryModel) -> DimensionScore:
         """Assess security baseline for containerization."""
         score = 100.0
-        findings: List[str] = []
-        issues: List[str] = []
-        recommendations: List[str] = []
+        findings: list[str] = []
+        issues: list[str] = []
+        recommendations: list[str] = []
 
         sec = data.security
 
@@ -307,29 +305,31 @@ class ContainerizationFeasibilityEvaluator:
             recommendations=recommendations,
         )
 
-    def _calculate_overall(self, dimension_scores: List[DimensionScore]) -> float:
+    def _calculate_overall(self, dimension_scores: list[DimensionScore]) -> float:
         """Calculate weighted overall score."""
         total = 0.0
         for ds in dimension_scores:
             total += ds.score * ds.weight
         return total
 
-    def _findings_to_issues(self, ds: DimensionScore, data: UnifiedDiscoveryModel) -> List[IssueDetail]:
+    def _findings_to_issues(self, ds: DimensionScore, data: UnifiedDiscoveryModel) -> list[IssueDetail]:
         """Convert dimension findings to detailed issues."""
-        issues: List[IssueDetail] = []
+        issues: list[IssueDetail] = []
         for issue_text in ds.issues:
             severity = RiskLevel.HIGH if ds.score < 50 else RiskLevel.MEDIUM if ds.score < 75 else RiskLevel.LOW
-            issues.append(IssueDetail(
-                category=ds.dimension.value,
-                severity=severity,
-                title=issue_text[:80],
-                description=issue_text,
-                impact="May complicate or prevent containerization",
-                recommendation="See recommendations above",
-            ))
+            issues.append(
+                IssueDetail(
+                    category=ds.dimension.value,
+                    severity=severity,
+                    title=issue_text[:80],
+                    description=issue_text,
+                    impact="May complicate or prevent containerization",
+                    recommendation="See recommendations above",
+                )
+            )
         return issues
 
-    def _determine_complexity(self, score: float, issues: List[IssueDetail]) -> ComplexityLevel:
+    def _determine_complexity(self, score: float, issues: list[IssueDetail]) -> ComplexityLevel:
         """Determine overall complexity level."""
         if score >= 80:
             return ComplexityLevel.SIMPLE
@@ -339,7 +339,7 @@ class ContainerizationFeasibilityEvaluator:
             return ComplexityLevel.COMPLEX
         return ComplexityLevel.BLOCKER
 
-    def _determine_risk(self, score: float, issues: List[IssueDetail]) -> RiskLevel:
+    def _determine_risk(self, score: float, issues: list[IssueDetail]) -> RiskLevel:
         """Determine overall risk level."""
         if score >= 80:
             return RiskLevel.LOW
@@ -350,7 +350,11 @@ class ContainerizationFeasibilityEvaluator:
         return RiskLevel.CRITICAL
 
     def _generate_summary(
-        self, score: float, complexity: ComplexityLevel, risk: RiskLevel, data: UnifiedDiscoveryModel
+        self,
+        score: float,
+        complexity: ComplexityLevel,
+        risk: RiskLevel,
+        data: UnifiedDiscoveryModel,
     ) -> str:
         """Generate executive summary."""
         hostname = data.hardware.hostname
@@ -363,9 +367,14 @@ class ContainerizationFeasibilityEvaluator:
             ComplexityLevel.BLOCKER: "currently not feasible",
         }
 
+        verdict = (
+            "The system is well-positioned for containerization."
+            if score >= 70
+            else "Address identified issues before proceeding with containerization."
+        )
         return (
             f"Host '{hostname}' ({os_info}) has a containerization feasibility score of "
             f"{score:.1f}/100, indicating a {complexity_labels[complexity]} migration. "
             f"Risk level: {risk.value}. "
-            f"{'The system is well-positioned for containerization.' if score >= 70 else 'Address identified issues before proceeding with containerization.'}"
+            f"{verdict}"
         )

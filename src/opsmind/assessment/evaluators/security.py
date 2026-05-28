@@ -1,8 +1,6 @@
 """Security posture evaluator for containerization readiness."""
 
-from typing import List
-
-from opsmind.schemas.assessment import ComplexityAssessment, ComplexityLevel, IssueDetail, RiskLevel
+from opsmind.schemas.assessment import ComplexityAssessment, ComplexityLevel
 from opsmind.schemas.discovery import UnifiedDiscoveryModel
 
 
@@ -20,7 +18,7 @@ class SecurityEvaluator:
         """
         sec = discovery_data.security
         issues: int = 0
-        factors: dict = {}
+        factors: dict[str, float] = {}
 
         if not sec.ssh_config_secure:
             issues += 1

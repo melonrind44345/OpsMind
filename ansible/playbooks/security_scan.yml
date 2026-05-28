@@ -19,9 +19,10 @@
       changed_when: no
 
     - name: Check SELinux status
-      ansible.builtin.selinux:
+      ansible.builtin.command: getenforce
       register: selinux_status
       ignore_errors: yes
+      changed_when: no
 
     - name: Check SSH configuration
       ansible.builtin.shell:
@@ -51,7 +52,8 @@
 
     - name: Check for users with empty passwords
       ansible.builtin.shell:
-        cmd: awk -F: '($2 == "" || $2 == "!") {print $1}' /etc/shadow 2>/dev/null | head -10
+        cmd: |
+          awk -F: '($2 == "" || $2 == "!") {print $1}' /etc/shadow 2>/dev/null | head -10
       register: empty_password_users
       ignore_errors: yes
       changed_when: no

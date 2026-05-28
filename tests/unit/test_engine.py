@@ -53,7 +53,7 @@ class TestOpsMindEngine:
         disc = self.engine.discover("localhost", method="mock")
         results = self.engine.assess(disc)
         assert len(results) > 0
-        for hostname, result in results.items():
+        for _hostname, result in results.items():
             assert result.feasibility.overall_score >= 0
             assert result.feasibility.overall_score <= 100
             assert result.complexity.estimated_effort_days is not None

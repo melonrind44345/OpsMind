@@ -3,6 +3,13 @@
 import pytest
 from pydantic import ValidationError
 
+from opsmind.schemas.assessment import (
+    AssessmentDimension,
+    ComplexityLevel,
+    DimensionScore,
+    FeasibilityReport,
+    RiskLevel,
+)
 from opsmind.schemas.discovery import (
     CPUInfo,
     DiscoveryMethod,
@@ -10,13 +17,6 @@ from opsmind.schemas.discovery import (
     HardwareSpec,
     MemoryInfo,
     UnifiedDiscoveryModel,
-)
-from opsmind.schemas.assessment import (
-    AssessmentDimension,
-    ComplexityLevel,
-    DimensionScore,
-    FeasibilityReport,
-    RiskLevel,
 )
 from opsmind.schemas.report import DetailLevel, ReportFormat, ReportMetadata
 

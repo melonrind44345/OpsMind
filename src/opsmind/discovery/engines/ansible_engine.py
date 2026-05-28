@@ -4,13 +4,11 @@ Executes Ansible setup modules and custom playbooks to collect
 system facts from local and remote hosts via SSH.
 """
 
-import asyncio
 import json
 import os
-import shutil
 import tempfile
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from opsmind.core.events import EventBus, EventType
 from opsmind.core.exceptions import AnsibleError, AnsibleNotAvailableError, SSHConnectionError
@@ -22,7 +20,6 @@ from opsmind.schemas.discovery import (
     DiscoveryMetadata,
     DiscoveryMethod,
     DiscoveryResult,
-    UnifiedDiscoveryModel,
 )
 
 
@@ -31,8 +28,8 @@ class AnsibleDiscoveryEngine(BaseDiscoveryEngine):
 
     def __init__(
         self,
-        inventory_path: Optional[str] = None,
-        ssh_config: Optional[Dict[str, Any]] = None,
+        inventory_path: str | None = None,
+        ssh_config: dict[str, Any] | None = None,
         timeout: int = 10,
         max_retries: int = 2,
     ) -> None:
@@ -41,7 +38,7 @@ class AnsibleDiscoveryEngine(BaseDiscoveryEngine):
         self.timeout = timeout
         self.max_retries = max_retries
         self.event_bus = EventBus()
-        self._available: Optional[bool] = None
+        self._available: bool | None = None
 
     @property
     def method(self) -> DiscoveryMethod:
@@ -105,7 +102,7 @@ class AnsibleDiscoveryEngine(BaseDiscoveryEngine):
 
         return self._discover_remote(host)
 
-    def discover_group(self, hosts: List[str], parallel: bool = True) -> DiscoveryResult:
+    def discover_group(self, hosts: list[str], parallel: bool = True) -> DiscoveryResult:
         """Discover multiple hosts.
 
         Args:
@@ -191,7 +188,7 @@ class AnsibleDiscoveryEngine(BaseDiscoveryEngine):
         )
         return result
 
-    def _discover_parallel(self, hosts: List[str]) -> DiscoveryResult:
+    def _discover_parallel(self, hosts: list[str]) -> DiscoveryResult:
         """Discover multiple hosts in parallel using Ansible."""
         start_time = time.time()
 
@@ -204,7 +201,7 @@ class AnsibleDiscoveryEngine(BaseDiscoveryEngine):
         success = 0
         failed = 0
 
-        for host, facts in zip(hosts, facts_list):
+        for host, facts in zip(hosts, facts_list, strict=False):
             if facts is None:
                 failed += 1
                 result.errors[host] = ["Discovery failed"]
@@ -233,7 +230,7 @@ class AnsibleDiscoveryEngine(BaseDiscoveryEngine):
         result.total_duration_ms = duration
         return result
 
-    def _run_ansible_setup(self, host: str, connection: str = "ssh") -> Dict[str, Any]:
+    def _run_ansible_setup(self, host: str, connection: str = "ssh") -> dict[str, Any]:
         """Execute ansible setup module on a single host.
 
         Args:
@@ -243,7 +240,7 @@ class AnsibleDiscoveryEngine(BaseDiscoveryEngine):
         Returns:
             Ansible facts dictionary
         """
-        last_error: Optional[Exception] = None
+        last_error: Exception | None = None
 
         for attempt in range(self.max_retries + 1):
             try:
@@ -251,18 +248,21 @@ class AnsibleDiscoveryEngine(BaseDiscoveryEngine):
             except AnsibleError as exc:
                 last_error = exc
                 if attempt < self.max_retries:
-                    self.event_bus.emit_simple(EventType.ENGINE_RETRY, {
-                        "host": host,
-                        "attempt": attempt + 1,
-                        "error": str(exc),
-                    })
+                    self.event_bus.emit_simple(
+                        EventType.ENGINE_RETRY,
+                        {
+                            "host": host,
+                            "attempt": attempt + 1,
+                            "error": str(exc),
+                        },
+                    )
                     time.sleep(1 * (attempt + 1))
                 else:
                     raise
 
         raise last_error or AnsibleError(f"Failed to discover {host}")
 
-    def _execute_setup(self, host: str, connection: str) -> Dict[str, Any]:
+    def _execute_setup(self, host: str, connection: str) -> dict[str, Any]:
         """Execute the actual ansible command."""
         import subprocess
 
@@ -281,10 +281,13 @@ class AnsibleDiscoveryEngine(BaseDiscoveryEngine):
 
             cmd = [
                 "ansible-playbook",
-                "-i", inventory_file,
+                "-i",
+                inventory_file,
                 playbook_file,
-                "-e", f"output_file={output_file}",
-                "--timeout", str(self.timeout),
+                "-e",
+                f"output_file={output_file}",
+                "--timeout",
+                str(self.timeout),
             ]
 
             if connection == "local":
@@ -356,11 +359,10 @@ all:
     ANSIBLE_TIMEOUT: "{{ lookup('env', 'ANSIBLE_TIMEOUT') | default('10', true) }}"
 """
 
-    def _parse_ansible_output(self, stdout: str) -> Dict[str, Any]:
+    def _parse_ansible_output(self, stdout: str) -> dict[str, Any]:
         """Parse ansible-playbook stdout to extract facts."""
-        import re
 
-        facts: Dict[str, Any] = {}
+        facts: dict[str, Any] = {}
         in_facts = False
         json_buffer = ""
 
@@ -382,9 +384,9 @@ all:
 
         return facts
 
-    def _extract_facts(self, raw_output: Dict[str, Any], host: str) -> Dict[str, Any]:
+    def _extract_facts(self, raw_output: dict[str, Any], host: str) -> dict[str, Any]:
         """Extract and normalize Ansible facts from raw output."""
-        facts: Dict[str, Any] = {}
+        facts: dict[str, Any] = {}
 
         if isinstance(raw_output, dict):
             for key in list(raw_output.keys()):
@@ -392,14 +394,18 @@ all:
                     facts[key] = raw_output[key]
 
             if not facts:
-                facts = {f"ansible_{k}": v for k, v in raw_output.items() if isinstance(v, (str, int, float, bool, list, dict))}
+                facts = {
+                    f"ansible_{k}": v
+                    for k, v in raw_output.items()
+                    if isinstance(v, (str, int, float, bool, list, dict))
+                }
 
         if not facts:
             raise AnsibleError(f"No facts collected for {host}", details={"host": host})
 
         return facts
 
-    def _run_ansible_setup_parallel(self, hosts: List[str]) -> List[Optional[Dict[str, Any]]]:
+    def _run_ansible_setup_parallel(self, hosts: list[str]) -> list[dict[str, Any] | None]:
         """Run ansible setup for multiple hosts."""
         import subprocess
 
@@ -408,20 +414,24 @@ all:
             for host in hosts:
                 inventory_lines.append(f"    {host}:")
                 inventory_lines.append(f"      ansible_host: {host}")
-                inventory_lines.append(f"      ansible_connection: ssh")
+                inventory_lines.append("      ansible_connection: ssh")
 
             inventory_file = os.path.join(tmpdir, "inventory.yml")
             with open(inventory_file, "w") as f:
                 f.write("\n".join(inventory_lines))
 
-            output_file = os.path.join(tmpdir, "output.json")
+            os.path.join(tmpdir, "output.json")
 
             cmd = [
                 "ansible",
-                "-i", inventory_file,
-                "-m", "setup",
-                "--tree", tmpdir,
-                "--timeout", str(self.timeout),
+                "-i",
+                inventory_file,
+                "-m",
+                "setup",
+                "--tree",
+                tmpdir,
+                "--timeout",
+                str(self.timeout),
             ]
 
             if self.ssh_config.get("user"):
@@ -437,7 +447,7 @@ all:
                 timeout=self.timeout + 30,
             )
 
-            results: List[Optional[Dict[str, Any]]] = []
+            results: list[dict[str, Any] | None] = []
             for host in hosts:
                 host_file = os.path.join(tmpdir, host)
                 if os.path.exists(host_file):
@@ -446,7 +456,7 @@ all:
                             data = json.load(f)
                         facts = data.get("ansible_facts", {})
                         results.append(facts)
-                    except (json.JSONDecodeError, IOError):
+                    except (OSError, json.JSONDecodeError):
                         results.append(None)
                 else:
                     results.append(None)

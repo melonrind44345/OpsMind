@@ -3,7 +3,6 @@
 import json
 import os
 from datetime import datetime
-from typing import Dict
 
 from opsmind.reporting.generators.base import BaseReportGenerator
 from opsmind.schemas.assessment import AssessmentResult
@@ -13,9 +12,7 @@ from opsmind.schemas.report import DetailLevel, ReportData, ReportMetadata
 class JSONReportGenerator(BaseReportGenerator):
     """Generates JSON assessment reports for programmatic consumption."""
 
-    def generate(
-        self, assessment_results: Dict[str, AssessmentResult], detail_level: DetailLevel
-    ) -> ReportData:
+    def generate(self, assessment_results: dict[str, AssessmentResult], detail_level: DetailLevel) -> ReportData:
         """Generate JSON report data."""
         host_data = {}
         for hostname, result in assessment_results.items():
@@ -25,8 +22,7 @@ class JSONReportGenerator(BaseReportGenerator):
         avg_score = sum(scores) / len(scores) if scores else 0
 
         exec_summary = (
-            f"Assessment of {len(assessment_results)} host(s). "
-            f"Average feasibility score: {avg_score:.1f}/100."
+            f"Assessment of {len(assessment_results)} host(s). Average feasibility score: {avg_score:.1f}/100."
         )
 
         recommendations = []
@@ -43,7 +39,10 @@ class JSONReportGenerator(BaseReportGenerator):
         return ReportData(
             metadata=metadata,
             executive_summary=exec_summary,
-            assessment_summary={"average_score": round(avg_score, 1), "total_hosts": len(assessment_results)},
+            assessment_summary={
+                "average_score": round(avg_score, 1),
+                "total_hosts": len(assessment_results),
+            },
             host_reports=assessment_results,
             global_recommendations=list(dict.fromkeys(recommendations)),
         )
@@ -59,10 +58,7 @@ class JSONReportGenerator(BaseReportGenerator):
             },
             "executive_summary": report_data.executive_summary,
             "assessment_summary": report_data.assessment_summary,
-            "hosts": {
-                host: self._result_to_dict(result)
-                for host, result in report_data.host_reports.items()
-            },
+            "hosts": {host: self._result_to_dict(result) for host, result in report_data.host_reports.items()},
             "global_recommendations": report_data.global_recommendations,
             "generated_files": report_data.generated_files,
         }
@@ -73,7 +69,7 @@ class JSONReportGenerator(BaseReportGenerator):
 
         return output_path
 
-    def _result_to_dict(self, result: AssessmentResult) -> dict:
+    def _result_to_dict(self, result: AssessmentResult) -> dict[str, object]:
         """Convert AssessmentResult to a JSON-serializable dict."""
         return {
             "host": result.host,

@@ -2,7 +2,6 @@
 
 import os
 from datetime import datetime
-from typing import Dict, List
 
 from opsmind.reporting.generators.base import BaseReportGenerator
 from opsmind.schemas.assessment import AssessmentResult, ComplexityLevel
@@ -12,16 +11,13 @@ from opsmind.schemas.report import DetailLevel, ReportData, ReportMetadata
 class HTMLReportGenerator(BaseReportGenerator):
     """Generates HTML assessment reports with visual formatting."""
 
-    def generate(
-        self, assessment_results: Dict[str, AssessmentResult], detail_level: DetailLevel
-    ) -> ReportData:
+    def generate(self, assessment_results: dict[str, AssessmentResult], detail_level: DetailLevel) -> ReportData:
         """Generate HTML report data."""
         scores = [r.feasibility.overall_score for r in assessment_results.values()]
         avg_score = sum(scores) / len(scores) if scores else 0
 
         exec_summary = (
-            f"Assessment of {len(assessment_results)} host(s). "
-            f"Average feasibility score: {avg_score:.1f}/100."
+            f"Assessment of {len(assessment_results)} host(s). Average feasibility score: {avg_score:.1f}/100."
         )
 
         metadata = ReportMetadata(
@@ -50,10 +46,7 @@ class HTMLReportGenerator(BaseReportGenerator):
 
     def _build_html(self, report: ReportData) -> str:
         """Build complete HTML page."""
-        host_cards = "\n".join(
-            self._build_host_card(host, result)
-            for host, result in report.host_reports.items()
-        )
+        host_cards = "\n".join(self._build_host_card(host, result) for host, result in report.host_reports.items())
 
         avg_score = report.assessment_summary.get("average_score", 0)
 
@@ -107,7 +100,7 @@ class HTMLReportGenerator(BaseReportGenerator):
         <header>
             <h1>{report.metadata.title}</h1>
             <div class="meta">
-                Generated: {report.metadata.generated_at.strftime('%Y-%m-%d %H:%M:%S')} |
+                Generated: {report.metadata.generated_at.strftime("%Y-%m-%d %H:%M:%S")} |
                 Version: {report.metadata.tool_version} |
                 Hosts: {report.metadata.total_hosts}
             </div>
@@ -137,7 +130,9 @@ class HTMLReportGenerator(BaseReportGenerator):
         comp = result.complexity
         sizing = result.resource_sizing
 
-        score_class = "score-high" if feas.overall_score >= 70 else "score-mid" if feas.overall_score >= 40 else "score-low"
+        score_class = (
+            "score-high" if feas.overall_score >= 70 else "score-mid" if feas.overall_score >= 40 else "score-low"
+        )
         complexity_map = {
             ComplexityLevel.SIMPLE: "c-simple",
             ComplexityLevel.MODERATE: "c-moderate",
@@ -151,7 +146,7 @@ class HTMLReportGenerator(BaseReportGenerator):
             bar_color = "#22c55e" if ds.score >= 70 else "#eab308" if ds.score >= 40 else "#ef4444"
             dim_cards += f"""
             <div class="dim">
-                <div class="dim-name">{ds.dimension.value.replace('_', ' ')}</div>
+                <div class="dim-name">{ds.dimension.value.replace("_", " ")}</div>
                 <div class="dim-score" style="color: {bar_color}">{ds.score:.0f}</div>
                 <div class="bar"><div class="bar-fill" style="width: {ds.score}%; background: {bar_color};"></div></div>
             </div>"""

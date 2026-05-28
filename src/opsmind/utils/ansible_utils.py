@@ -1,9 +1,7 @@
 """Ansible utility functions."""
 
 import os
-import shutil
 import subprocess
-from typing import Any, Dict, List, Optional
 
 
 def check_ansible_available() -> bool:
@@ -20,7 +18,7 @@ def check_ansible_available() -> bool:
         return False
 
 
-def get_ansible_version() -> Optional[str]:
+def get_ansible_version() -> str | None:
     """Get installed Ansible version string."""
     try:
         result = subprocess.run(
@@ -41,12 +39,13 @@ def check_ansible_runner() -> bool:
     """Check if ansible-runner Python package is available."""
     try:
         import ansible_runner  # noqa: F401
+
         return True
     except ImportError:
         return False
 
 
-def find_inventory_files(base_path: Optional[str] = None) -> List[str]:
+def find_inventory_files(base_path: str | None = None) -> list[str]:
     """Find Ansible inventory files in standard locations."""
     search_paths = []
 
@@ -55,13 +54,15 @@ def find_inventory_files(base_path: Optional[str] = None) -> List[str]:
         search_paths.append(os.path.join(base_path, "inventory"))
 
     home = os.path.expanduser("~")
-    search_paths.extend([
-        os.path.join(home, "opsmind", "ansible", "inventories"),
-        os.path.join(home, "opsmind", "inventory"),
-        "/etc/ansible/hosts",
-    ])
+    search_paths.extend(
+        [
+            os.path.join(home, "opsmind", "ansible", "inventories"),
+            os.path.join(home, "opsmind", "inventory"),
+            "/etc/ansible/hosts",
+        ]
+    )
 
-    inventories: List[str] = []
+    inventories: list[str] = []
     for path in search_paths:
         if os.path.isfile(path):
             inventories.append(path)
@@ -75,8 +76,8 @@ def find_inventory_files(base_path: Optional[str] = None) -> List[str]:
 
 def validate_ssh_connectivity(
     host: str,
-    user: Optional[str] = None,
-    key_file: Optional[str] = None,
+    user: str | None = None,
+    key_file: str | None = None,
     timeout: int = 10,
 ) -> bool:
     """Validate SSH connectivity to a remote host."""
@@ -104,7 +105,7 @@ def validate_ssh_connectivity(
         return False
 
 
-def create_dynamic_inventory(hosts: List[str]) -> str:
+def create_dynamic_inventory(hosts: list[str]) -> str:
     """Create a dynamic inventory string for the given hosts."""
     import tempfile
 
@@ -113,14 +114,12 @@ def create_dynamic_inventory(hosts: List[str]) -> str:
         lines.append(f"    {host}:")
         lines.append(f"      ansible_host: {host}")
 
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".yml", prefix="opsmind_inventory_", delete=False
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", prefix="opsmind_inventory_", delete=False) as f:
         f.write("\n".join(lines))
         return f.name
 
 
-def get_playbook_path(name: str) -> Optional[str]:
+def get_playbook_path(name: str) -> str | None:
     """Get path to a bundled playbook."""
     search_paths = [
         os.path.join(os.path.dirname(__file__), "..", "..", "ansible", "playbooks"),

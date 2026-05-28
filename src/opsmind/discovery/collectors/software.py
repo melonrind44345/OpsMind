@@ -2,23 +2,24 @@
 
 import os
 import subprocess
-from typing import Dict, List, Optional
 
-from opsmind.schemas.discovery import ServiceInfo, SoftwareEnvironment, SoftwarePackage
+from opsmind.schemas.discovery import SoftwareEnvironment
 
 
 class SoftwareCollector:
     """Supplementary software data collection beyond Ansible facts."""
 
     @staticmethod
-    def detect_container_runtime() -> Optional[str]:
+    def detect_container_runtime() -> str | None:
         """Detect available container runtimes."""
         runtimes = ["docker", "podman", "containerd", "nerdctl"]
         for runtime in runtimes:
             try:
                 result = subprocess.run(
                     [runtime, "--version"],
-                    capture_output=True, text=True, timeout=5,
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
                 )
                 if result.returncode == 0:
                     return runtime
@@ -27,13 +28,15 @@ class SoftwareCollector:
         return None
 
     @staticmethod
-    def detect_orchestrators() -> List[str]:
+    def detect_orchestrators() -> list[str]:
         """Detect container orchestrators."""
-        found: List[str] = []
+        found: list[str] = []
         try:
             result = subprocess.run(
                 ["kubectl", "version", "--short"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             if result.returncode == 0:
                 found.append("kubernetes")
@@ -47,7 +50,9 @@ class SoftwareCollector:
         try:
             result = subprocess.run(
                 ["docker", "compose", "version"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             return result.returncode == 0
         except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -55,20 +60,28 @@ class SoftwareCollector:
         try:
             result = subprocess.run(
                 ["docker-compose", "--version"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             return result.returncode == 0
         except (FileNotFoundError, subprocess.TimeoutExpired):
             return False
 
     @staticmethod
-    def detect_java_version() -> Optional[str]:
+    def detect_java_version() -> str | None:
         """Detect installed Java version."""
-        for java_cmd, flag in [("java", "-version"), ("java11", "-version"), ("java17", "-version")]:
+        for java_cmd, flag in [
+            ("java", "-version"),
+            ("java11", "-version"),
+            ("java17", "-version"),
+        ]:
             try:
                 result = subprocess.run(
                     [java_cmd, flag],
-                    capture_output=True, text=True, timeout=5,
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
                 )
                 if result.returncode == 0:
                     for line in (result.stderr or "").splitlines():
@@ -79,13 +92,15 @@ class SoftwareCollector:
         return None
 
     @staticmethod
-    def detect_python_version() -> Optional[str]:
+    def detect_python_version() -> str | None:
         """Detect installed Python versions."""
         for py_cmd in ["python3", "python"]:
             try:
                 result = subprocess.run(
                     [py_cmd, "--version"],
-                    capture_output=True, text=True, timeout=5,
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
                 )
                 if result.returncode == 0:
                     return result.stdout.strip() or result.stderr.strip()
@@ -94,12 +109,14 @@ class SoftwareCollector:
         return None
 
     @staticmethod
-    def detect_node_version() -> Optional[str]:
+    def detect_node_version() -> str | None:
         """Detect installed Node.js version."""
         try:
             result = subprocess.run(
                 ["node", "--version"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             if result.returncode == 0:
                 return result.stdout.strip()

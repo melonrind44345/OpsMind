@@ -1,16 +1,12 @@
 """Unit tests for assessment evaluators."""
 
-import json
-from pathlib import Path
-
 import pytest
 
-from opsmind.assessment.evaluators.feasibility import ContainerizationFeasibilityEvaluator
 from opsmind.assessment.evaluators.complexity import ComplexityEvaluator
+from opsmind.assessment.evaluators.feasibility import ContainerizationFeasibilityEvaluator
 from opsmind.assessment.evaluators.security import SecurityEvaluator
-from opsmind.discovery.adapters.ansible_adapter import AnsibleFactAdapter
 from opsmind.discovery.engines.mock_engine import MockDiscoveryEngine
-from opsmind.schemas.assessment import ComplexityLevel, RiskLevel
+from opsmind.schemas.assessment import ComplexityLevel
 
 
 @pytest.fixture
@@ -42,7 +38,11 @@ class TestFeasibilityEvaluator:
         assert report.overall_score <= 100
 
         # Legacy CentOS 6 should have moderate-to-low score
-        assert report.complexity in (ComplexityLevel.MODERATE, ComplexityLevel.COMPLEX, ComplexityLevel.BLOCKER)
+        assert report.complexity in (
+            ComplexityLevel.MODERATE,
+            ComplexityLevel.COMPLEX,
+            ComplexityLevel.BLOCKER,
+        )
 
         assert len(report.dimension_scores) == 4
         assert len(report.recommendations) > 0
@@ -98,8 +98,10 @@ class TestComplexityEvaluator:
 
         # Modern system should have lower complexity score
         # (Higher score = more complex)
-        assert modern_result.assessment.score <= legacy_result.assessment.score or \
-               modern_result.assessment.level.value <= legacy_result.assessment.level.value
+        assert (
+            modern_result.assessment.score <= legacy_result.assessment.score
+            or modern_result.assessment.level.value <= legacy_result.assessment.level.value
+        )
 
     def test_resource_sizing(self, legacy_candidate):
         result = self.evaluator.evaluate(legacy_candidate)

@@ -1,7 +1,6 @@
 """Base report generator interface."""
 
 from abc import ABC, abstractmethod
-from typing import Dict
 
 from opsmind.schemas.assessment import AssessmentResult
 from opsmind.schemas.report import DetailLevel, ReportData
@@ -14,9 +13,7 @@ class BaseReportGenerator(ABC):
         self.output_dir = output_dir
 
     @abstractmethod
-    def generate(
-        self, assessment_results: Dict[str, AssessmentResult], detail_level: DetailLevel
-    ) -> ReportData:
+    def generate(self, assessment_results: dict[str, AssessmentResult], detail_level: DetailLevel) -> ReportData:
         """Generate report data from assessment results."""
         ...
 

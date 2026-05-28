@@ -2,23 +2,22 @@
 
 import os
 import subprocess
-from typing import Dict, List, Optional
-
-from opsmind.schemas.discovery import SecurityAssessment
 
 
 class SecurityCollector:
     """Supplementary security data collection beyond Ansible facts."""
 
     @staticmethod
-    def check_open_ports() -> List[int]:
+    def check_open_ports() -> list[int]:
         """Detect listening TCP ports."""
-        open_ports: List[int] = []
+        open_ports: list[int] = []
         try:
             if os.path.exists("/usr/sbin/ss"):
                 result = subprocess.run(
                     ["ss", "-tlnp"],
-                    capture_output=True, text=True, timeout=10,
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
                 )
                 for line in result.stdout.splitlines():
                     parts = line.split()
@@ -31,7 +30,9 @@ class SecurityCollector:
             elif os.path.exists("/bin/netstat"):
                 result = subprocess.run(
                     ["netstat", "-tlnp"],
-                    capture_output=True, text=True, timeout=10,
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
                 )
                 for line in result.stdout.splitlines():
                     parts = line.split()
@@ -46,7 +47,7 @@ class SecurityCollector:
         return sorted(set(open_ports))
 
     @staticmethod
-    def check_ssh_security() -> Dict[str, bool]:
+    def check_ssh_security() -> dict[str, bool]:
         """Check SSH security configuration."""
         results = {
             "root_login_disabled": False,
@@ -65,15 +66,17 @@ class SecurityCollector:
         return results
 
     @staticmethod
-    def check_pending_security_updates() -> Optional[int]:
+    def check_pending_security_updates() -> int | None:
         """Count pending security updates."""
         try:
             if os.path.exists("/usr/bin/apt"):
                 result = subprocess.run(
                     ["apt", "list", "--upgradable"],
-                    capture_output=True, text=True, timeout=30,
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
                 )
-                lines = [l for l in result.stdout.splitlines() if "-security" in l]
+                lines = [line for line in result.stdout.splitlines() if "-security" in line]
                 return len(lines)
             return None
         except (FileNotFoundError, subprocess.TimeoutExpired, Exception):

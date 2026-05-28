@@ -3,15 +3,14 @@
 import json
 import os
 import tempfile
-from pathlib import Path
 
 import pytest
 
 from opsmind.core.engine import OpsMindEngine
-from opsmind.reporting.generators.json import JSONReportGenerator
-from opsmind.reporting.generators.markdown import MarkdownReportGenerator
 from opsmind.remediation.generators.docker import DockerGenerator
 from opsmind.remediation.generators.migration_plan import MigrationPlanGenerator
+from opsmind.reporting.generators.json import JSONReportGenerator
+from opsmind.reporting.generators.markdown import MarkdownReportGenerator
 from opsmind.schemas.report import DetailLevel
 
 
@@ -25,6 +24,7 @@ class TestFullPipeline:
 
     def teardown_method(self):
         import shutil
+
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     def test_discover_to_assess_pipeline(self):
@@ -36,7 +36,7 @@ class TestFullPipeline:
         assessment = self.engine.assess(discovery)
         assert len(assessment) >= 1
 
-        for hostname, result in assessment.items():
+        for _hostname, result in assessment.items():
             assert 0 <= result.feasibility.overall_score <= 100
             assert result.migration_strategy.strategy_type != ""
 
@@ -157,6 +157,7 @@ class TestFullPipeline:
 
         # Subscribe to all event types
         from opsmind.core.events import EventType
+
         for et in EventType:
             self.engine.event_bus.subscribe(et, collector)
 

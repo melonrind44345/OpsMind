@@ -1,16 +1,15 @@
 """Pydantic models for report data."""
 
 from datetime import datetime
-from enum import Enum
-from typing import Any, Dict, List, Optional
+from enum import StrEnum
+from typing import Any
 
 from pydantic import BaseModel, Field
 
-from opsmind.schemas.assessment import AssessmentResult, ComplexityLevel, RiskLevel
-from opsmind.schemas.discovery import DiscoveryResult
+from opsmind.schemas.assessment import AssessmentResult
 
 
-class ReportFormat(str, Enum):
+class ReportFormat(StrEnum):
     """Supported report output formats."""
 
     MARKDOWN = "markdown"
@@ -18,7 +17,7 @@ class ReportFormat(str, Enum):
     HTML = "html"
 
 
-class DetailLevel(str, Enum):
+class DetailLevel(StrEnum):
     """Report detail granularity."""
 
     EXECUTIVE = "executive"
@@ -32,8 +31,8 @@ class ReportSection(BaseModel):
 
     title: str = Field(description="Section title")
     content: str = Field(description="Section content (markdown)")
-    subsections: List["ReportSection"] = Field(default_factory=list, description="Sub-sections")
-    data_refs: List[str] = Field(default_factory=list, description="References to underlying data")
+    subsections: list["ReportSection"] = Field(default_factory=list, description="Sub-sections")
+    data_refs: list[str] = Field(default_factory=list, description="References to underlying data")
 
 
 class ReportMetadata(BaseModel):
@@ -53,12 +52,12 @@ class ReportData(BaseModel):
 
     metadata: ReportMetadata = Field(default_factory=ReportMetadata, description="Report metadata")
     executive_summary: str = Field(default="", description="Executive summary")
-    discovery_summary: Dict[str, Any] = Field(default_factory=dict, description="Discovery results summary")
-    assessment_summary: Dict[str, Any] = Field(default_factory=dict, description="Assessment results summary")
-    host_reports: Dict[str, AssessmentResult] = Field(default_factory=dict, description="Per-host assessments")
-    global_recommendations: List[str] = Field(default_factory=list, description="Global recommendations")
-    generated_files: List[str] = Field(default_factory=list, description="Generated output files")
-    sections: List[ReportSection] = Field(default_factory=list, description="Report sections")
+    discovery_summary: dict[str, Any] = Field(default_factory=dict, description="Discovery results summary")
+    assessment_summary: dict[str, Any] = Field(default_factory=dict, description="Assessment results summary")
+    host_reports: dict[str, AssessmentResult] = Field(default_factory=dict, description="Per-host assessments")
+    global_recommendations: list[str] = Field(default_factory=list, description="Global recommendations")
+    generated_files: list[str] = Field(default_factory=list, description="Generated output files")
+    sections: list[ReportSection] = Field(default_factory=list, description="Report sections")
 
 
 class ReportComparison(BaseModel):
@@ -67,7 +66,7 @@ class ReportComparison(BaseModel):
     before_report: str = Field(description="Path to baseline report")
     after_report: str = Field(description="Path to comparison report")
     score_delta: float = Field(default=0.0, description="Change in overall score")
-    hosts_added: List[str] = Field(default_factory=list, description="Hosts in after but not before")
-    hosts_removed: List[str] = Field(default_factory=list, description="Hosts in before but not after")
-    changes: List[Dict[str, Any]] = Field(default_factory=list, description="Specific changes detected")
+    hosts_added: list[str] = Field(default_factory=list, description="Hosts in after but not before")
+    hosts_removed: list[str] = Field(default_factory=list, description="Hosts in before but not after")
+    changes: list[dict[str, Any]] = Field(default_factory=list, description="Specific changes detected")
     generated_at: datetime = Field(default_factory=datetime.now, description="Comparison timestamp")

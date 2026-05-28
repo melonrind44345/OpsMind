@@ -5,12 +5,12 @@ no real hosts are available.
 """
 
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from opsmind.discovery.engines.base import BaseDiscoveryEngine
 from opsmind.schemas.discovery import (
-    CPUInfo,
     ConfidenceLevel,
+    CPUInfo,
     DataSource,
     DiscoveryMethod,
     DiscoveryResult,
@@ -43,8 +43,20 @@ class MockDiscoveryEngine(BaseDiscoveryEngine):
             "memory_total_gb": 16.0,
             "memory_available_gb": 2.5,
             "disks": [
-                {"device": "/dev/sda1", "mount": "/", "fstype": "ext4", "total": 100.0, "used": 85.0},
-                {"device": "/dev/sdb1", "mount": "/data", "fstype": "xfs", "total": 500.0, "used": 420.0},
+                {
+                    "device": "/dev/sda1",
+                    "mount": "/",
+                    "fstype": "ext4",
+                    "total": 100.0,
+                    "used": 85.0,
+                },
+                {
+                    "device": "/dev/sdb1",
+                    "mount": "/data",
+                    "fstype": "xfs",
+                    "total": 500.0,
+                    "used": 420.0,
+                },
             ],
             "packages_count": 450,
             "services": [
@@ -74,8 +86,20 @@ class MockDiscoveryEngine(BaseDiscoveryEngine):
             "memory_total_gb": 64.0,
             "memory_available_gb": 32.0,
             "disks": [
-                {"device": "/dev/nvme0n1p2", "mount": "/", "fstype": "ext4", "total": 200.0, "used": 45.0},
-                {"device": "/dev/nvme1n1", "mount": "/data", "fstype": "xfs", "total": 1000.0, "used": 200.0},
+                {
+                    "device": "/dev/nvme0n1p2",
+                    "mount": "/",
+                    "fstype": "ext4",
+                    "total": 200.0,
+                    "used": 45.0,
+                },
+                {
+                    "device": "/dev/nvme1n1",
+                    "mount": "/data",
+                    "fstype": "xfs",
+                    "total": 1000.0,
+                    "used": 200.0,
+                },
             ],
             "packages_count": 680,
             "services": [
@@ -120,7 +144,7 @@ class MockDiscoveryEngine(BaseDiscoveryEngine):
         },
     }
 
-    def __init__(self, profile: Optional[str] = None) -> None:
+    def __init__(self, profile: str | None = None) -> None:
         self.profile = profile
 
     @property
@@ -162,7 +186,7 @@ class MockDiscoveryEngine(BaseDiscoveryEngine):
         )
         return result
 
-    def discover_group(self, hosts: List[str], parallel: bool = True) -> DiscoveryResult:
+    def discover_group(self, hosts: list[str], parallel: bool = True) -> DiscoveryResult:
         """Generate mock data for multiple hosts."""
         start_time = time.time()
 
@@ -185,7 +209,7 @@ class MockDiscoveryEngine(BaseDiscoveryEngine):
         result.total_duration_ms = (time.time() - start_time) * 1000
         return result
 
-    def _select_profile(self, host: str) -> Dict[str, Any]:
+    def _select_profile(self, host: str) -> dict[str, Any]:
         """Select the appropriate mock profile."""
         if host in self.MOCK_PROFILES:
             return self.MOCK_PROFILES[host]
@@ -193,7 +217,7 @@ class MockDiscoveryEngine(BaseDiscoveryEngine):
             return self.MOCK_PROFILES["legacy-centos"]
         return self.MOCK_PROFILES["legacy-centos"]
 
-    def _build_unified(self, profile: Dict[str, Any]) -> UnifiedDiscoveryModel:
+    def _build_unified(self, profile: dict[str, Any]) -> UnifiedDiscoveryModel:
         """Build UnifiedDiscoveryModel from profile data."""
         cpu = CPUInfo(
             model=profile.get("cpu_model", "Unknown"),
@@ -211,15 +235,17 @@ class MockDiscoveryEngine(BaseDiscoveryEngine):
 
         disks = []
         for disk in profile.get("disks", []):
-            disks.append(DiskInfo(
-                device=disk["device"],
-                mount_point=disk["mount"],
-                filesystem=disk["fstype"],
-                total_gb=disk["total"],
-                used_gb=disk["used"],
-                available_gb=disk["total"] - disk["used"],
-                is_ssd="nvme" in disk["device"],
-            ))
+            disks.append(
+                DiskInfo(
+                    device=disk["device"],
+                    mount_point=disk["mount"],
+                    filesystem=disk["fstype"],
+                    total_gb=disk["total"],
+                    used_gb=disk["used"],
+                    available_gb=disk["total"] - disk["used"],
+                    is_ssd="nvme" in disk["device"],
+                )
+            )
 
         net_ifaces = [
             NetworkInterface(
@@ -242,20 +268,24 @@ class MockDiscoveryEngine(BaseDiscoveryEngine):
 
         packages = []
         for i in range(min(profile.get("packages_count", 100), 100)):
-            packages.append(SoftwarePackage(
-                name=f"pkg-{i}",
-                version=f"{i % 10}.{i % 5}.{i % 3}",
-                architecture="x86_64",
-            ))
+            packages.append(
+                SoftwarePackage(
+                    name=f"pkg-{i}",
+                    version=f"{i % 10}.{i % 5}.{i % 3}",
+                    architecture="x86_64",
+                )
+            )
 
         services = []
         for svc in profile.get("services", []):
-            services.append(ServiceInfo(
-                name=svc["name"],
-                state=svc["state"],
-                enabled=svc["enabled"],
-                pid=1000 + hash(svc["name"]) % 50000 if svc["state"] == "running" else None,
-            ))
+            services.append(
+                ServiceInfo(
+                    name=svc["name"],
+                    state=svc["state"],
+                    enabled=svc["enabled"],
+                    pid=1000 + hash(svc["name"]) % 50000 if svc["state"] == "running" else None,
+                )
+            )
 
         software = SoftwareEnvironment(
             os_name=profile.get("os_name", "Linux"),

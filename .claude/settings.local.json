@@ -15,7 +15,10 @@
       "Bash(rm -rf /workspaces/OpsMind/docker-jenkins-agent/)",
       "Bash(rm -rf /workspaces/OpsMind/.jenkins/)",
       "Bash(./scripts/ci/local-test.sh *)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(ruff check *)",
+      "Bash(ruff format *)",
+      "Bash(bash *)"
     ]
   }
 }

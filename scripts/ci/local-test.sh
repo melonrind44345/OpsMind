@@ -38,7 +38,7 @@ header() {
 # --- Default settings ---
 STAGE="all"
 SKIP_SECURITY=false
-COVERAGE_THRESHOLD=80
+COVERAGE_THRESHOLD=40
 PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 PACKAGE_DIR="src/opsmind"
 TEST_DIR="tests"

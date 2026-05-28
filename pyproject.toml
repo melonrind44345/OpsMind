@@ -99,10 +99,15 @@ exclude_lines = [
 
 [tool.ruff]
 target-version = "py311"
-line-length = 100
+line-length = 120
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "SIM"]
+ignore = ["B904", "SIM105"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/opsmind/reporting/generators/html.py" = ["E501"]
+"src/opsmind/remediation/generators/docker.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.11"

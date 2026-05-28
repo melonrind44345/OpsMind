@@ -2,10 +2,8 @@
 
 import os
 from datetime import datetime
-from typing import Dict, List, Optional
 
 from opsmind.schemas.assessment import AssessmentResult, ComplexityLevel
-from opsmind.schemas.discovery import UnifiedDiscoveryModel
 
 
 class DockerGenerator:
@@ -14,9 +12,7 @@ class DockerGenerator:
     def __init__(self, output_dir: str) -> None:
         self.output_dir = output_dir
 
-    def generate(
-        self, assessment_results: Dict[str, AssessmentResult], optimize: Optional[str] = None
-    ) -> List[str]:
+    def generate(self, assessment_results: dict[str, AssessmentResult], optimize: str | None = None) -> list[str]:
         """Generate Docker artifacts for each host.
 
         Args:
@@ -26,7 +22,7 @@ class DockerGenerator:
         Returns:
             List of generated file paths
         """
-        generated: List[str] = []
+        generated: list[str] = []
 
         for hostname, result in assessment_results.items():
             host_dir = os.path.join(self.output_dir, "docker", hostname)
@@ -63,17 +59,19 @@ class DockerGenerator:
 
         return generated
 
-    def _generate_dockerfile(self, result: AssessmentResult, optimize: Optional[str] = None) -> str:
+    def _generate_dockerfile(self, result: AssessmentResult, optimize: str | None = None) -> str:
         """Generate a Dockerfile based on the assessment."""
-        os_name = result.migration_strategy.strategy_type
-        is_legacy = result.feasibility.complexity in (ComplexityLevel.COMPLEX, ComplexityLevel.BLOCKER)
+        is_legacy = result.feasibility.complexity in (
+            ComplexityLevel.COMPLEX,
+            ComplexityLevel.BLOCKER,
+        )
 
         base_image = self._select_base_image(result)
         packages = self._estimate_packages(result)
 
         if optimize == "size":
             return f"""# OpsMind Generated Dockerfile - Size Optimized
-# Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+# Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 # Host: {result.host}
 # Strategy: {result.migration_strategy.strategy_type}
 
@@ -94,7 +92,7 @@ CMD ["bash"]
 """
         else:
             return f"""# OpsMind Generated Dockerfile
-# Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+# Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 # Host: {result.host}
 # Strategy: {result.migration_strategy.strategy_type}
 # Feasibility Score: {result.feasibility.overall_score}/100
@@ -102,7 +100,7 @@ CMD ["bash"]
 FROM {base_image}
 
 LABEL opsmind.host="{result.host}" \\
-      opsmind.generated="{datetime.now().strftime('%Y-%m-%d')}" \\
+      opsmind.generated="{datetime.now().strftime("%Y-%m-%d")}" \\
       opsmind.version="0.1.0" \\
       description="Containerized {result.host} - {result.feasibility.complexity.value} migration"
 
@@ -124,18 +122,18 @@ EXPOSE 80 443
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \\
     CMD curl -f http://localhost/ || exit 1
 
-LABEL opsmind.migration.risks="{'High' if is_legacy else 'Low'}" \\
+LABEL opsmind.migration.risks="{"High" if is_legacy else "Low"}" \\
       opsmind.migration.effort="{result.complexity.estimated_effort_days} days"
 
 CMD ["bash"]
 """
 
-    def _generate_compose(self, hostname: str, result: AssessmentResult, optimize: Optional[str] = None) -> str:
+    def _generate_compose(self, hostname: str, result: AssessmentResult, optimize: str | None = None) -> str:
         """Generate docker-compose.yml."""
         sizing = result.resource_sizing
 
         return f"""# OpsMind Generated docker-compose.yml
-# Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+# Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 # Host: {hostname}
 
 version: "3.8"
@@ -207,7 +205,7 @@ docs
         """Generate build and run shell script."""
         return f"""#!/bin/bash
 # OpsMind Build Script for {hostname}
-# Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+# Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 
 set -euo pipefail
 

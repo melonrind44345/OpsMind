@@ -1,7 +1,5 @@
 """Complexity and resource sizing evaluator."""
 
-from typing import Any, Dict, List
-
 from opsmind.schemas.assessment import (
     ComplexityAssessment,
     ComplexityLevel,
@@ -49,11 +47,9 @@ class ComplexityEvaluator:
             strategy=strategy,
         )
 
-    def _assess_complexity(
-        self, data: UnifiedDiscoveryModel
-    ) -> tuple[ComplexityLevel, float, Dict[str, float]]:
+    def _assess_complexity(self, data: UnifiedDiscoveryModel) -> tuple[ComplexityLevel, float, dict[str, float]]:
         """Assess overall migration complexity."""
-        factors: Dict[str, float] = {}
+        factors: dict[str, float] = {}
 
         # OS factor
         os_name = data.software.os_name.lower()
@@ -78,10 +74,7 @@ class ComplexityEvaluator:
 
         # Database factor
         db_keywords = ["mysql", "postgres", "mariadb", "mongodb", "oracle", "mssql"]
-        has_db = any(
-            any(kw in s.name.lower() for kw in db_keywords)
-            for s in data.software.services
-        )
+        has_db = any(any(kw in s.name.lower() for kw in db_keywords) for s in data.software.services)
         if has_db:
             factors["Database services present"] = 50.0
 
@@ -177,9 +170,7 @@ class ComplexityEvaluator:
             optimizations=optimizations,
         )
 
-    def _recommend_strategy(
-        self, level: ComplexityLevel, data: UnifiedDiscoveryModel
-    ) -> MigrationStrategy:
+    def _recommend_strategy(self, level: ComplexityLevel, data: UnifiedDiscoveryModel) -> MigrationStrategy:
         """Recommend migration strategy."""
         sw = data.software
         os_lower = sw.os_name.lower()
@@ -224,7 +215,7 @@ class ComplexityEvaluator:
         return MigrationStrategy(
             strategy_type=strategy_type,
             phases=phases,
-            estimated_duration_days=sum(p["duration"] for p in phases if isinstance(p.get("duration"), int)) or None,
+            estimated_duration_days=sum(p["duration"] for p in phases if isinstance(p.get("duration"), int)) or None,  # type: ignore[misc]
             risks=risks,
             rollback_strategy="Keep original system intact; redirect traffic via DNS change",
         )
@@ -239,7 +230,7 @@ class ComplexityEvaluator:
         }
         return base_estimates.get(level, 7)
 
-    def _identify_skills(self, level: ComplexityLevel, data: UnifiedDiscoveryModel) -> List[str]:
+    def _identify_skills(self, level: ComplexityLevel, data: UnifiedDiscoveryModel) -> list[str]:
         """Identify required skills."""
         skills = ["Docker", "Container orchestration basics"]
         if level in (ComplexityLevel.MODERATE, ComplexityLevel.COMPLEX, ComplexityLevel.BLOCKER):

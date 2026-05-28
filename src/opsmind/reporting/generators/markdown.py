@@ -1,33 +1,31 @@
 """Markdown report generator."""
 
-import json
 import os
 from datetime import datetime
-from typing import Dict, List, Optional
 
 from opsmind.reporting.generators.base import BaseReportGenerator
-from opsmind.schemas.assessment import AssessmentResult, ComplexityLevel, DimensionScore, RiskLevel
+from opsmind.schemas.assessment import AssessmentResult, ComplexityLevel
 from opsmind.schemas.report import DetailLevel, ReportData, ReportMetadata, ReportSection
 
 
 class MarkdownReportGenerator(BaseReportGenerator):
     """Generates Markdown assessment reports."""
 
-    def generate(
-        self, assessment_results: Dict[str, AssessmentResult], detail_level: DetailLevel
-    ) -> ReportData:
+    def generate(self, assessment_results: dict[str, AssessmentResult], detail_level: DetailLevel) -> ReportData:
         """Generate a Markdown report."""
-        sections: List[ReportSection] = []
+        sections: list[ReportSection] = []
 
         # Title section
         sections.append(self._generate_title_section(assessment_results))
 
         # Executive summary
         exec_summary = self._generate_executive_summary(assessment_results)
-        sections.append(ReportSection(
-            title="Executive Summary",
-            content=exec_summary,
-        ))
+        sections.append(
+            ReportSection(
+                title="Executive Summary",
+                content=exec_summary,
+            )
+        )
 
         # Per-host sections
         for hostname, result in assessment_results.items():
@@ -38,10 +36,12 @@ class MarkdownReportGenerator(BaseReportGenerator):
         recommendations = self._collect_recommendations(assessment_results)
         if recommendations:
             recs_content = "\n".join(f"- {r}" for r in recommendations)
-            sections.append(ReportSection(
-                title="Recommendations",
-                content=recs_content,
-            ))
+            sections.append(
+                ReportSection(
+                    title="Recommendations",
+                    content=recs_content,
+                )
+            )
 
         # Methodology
         sections.append(self._generate_methodology_section())
@@ -62,7 +62,7 @@ class MarkdownReportGenerator(BaseReportGenerator):
 
     def export(self, report_data: ReportData, output_path: str) -> str:
         """Export report to Markdown file."""
-        lines: List[str] = []
+        lines: list[str] = []
 
         lines.append(f"# {report_data.metadata.title}")
         lines.append("")
@@ -93,7 +93,7 @@ class MarkdownReportGenerator(BaseReportGenerator):
 
         return output_path
 
-    def _generate_title_section(self, results: Dict[str, AssessmentResult]) -> ReportSection:
+    def _generate_title_section(self, results: dict[str, AssessmentResult]) -> ReportSection:
         """Generate title and overview section."""
         scores = [r.feasibility.overall_score for r in results.values()]
         avg_score = sum(scores) / len(scores) if scores else 0
@@ -103,14 +103,11 @@ class MarkdownReportGenerator(BaseReportGenerator):
             for h, r in results.items()
         )
 
-        content = (
-            f"**Overall Score**: {avg_score:.1f}/100\n\n"
-            f"**Hosts Assessed**:\n{host_list}"
-        )
+        content = f"**Overall Score**: {avg_score:.1f}/100\n\n**Hosts Assessed**:\n{host_list}"
 
         return ReportSection(title="Overview", content=content)
 
-    def _generate_executive_summary(self, results: Dict[str, AssessmentResult]) -> str:
+    def _generate_executive_summary(self, results: dict[str, AssessmentResult]) -> str:
         """Generate executive summary."""
         scores = [r.feasibility.overall_score for r in results.values()]
         avg_score = sum(scores) / len(scores) if scores else 0
@@ -192,7 +189,7 @@ class MarkdownReportGenerator(BaseReportGenerator):
         lines.append(f"- **Strategy**: {result.migration_strategy.strategy_type}")
         lines.append(f"- **Estimated Effort**: {comp.estimated_effort_days} days")
         phases_table = "\n".join(
-            f"  - Phase {p.get('phase', i+1)}: {p.get('name', '')} ({p.get('duration', '')})"
+            f"  - Phase {p.get('phase', i + 1)}: {p.get('name', '')} ({p.get('duration', '')})"
             for i, p in enumerate(result.migration_strategy.phases)
         )
         lines.append(f"- **Phases**:\n{phases_table}")
@@ -213,9 +210,9 @@ class MarkdownReportGenerator(BaseReportGenerator):
             content="\n".join(lines),
         )
 
-    def _collect_recommendations(self, results: Dict[str, AssessmentResult]) -> List[str]:
+    def _collect_recommendations(self, results: dict[str, AssessmentResult]) -> list[str]:
         """Collect global recommendations."""
-        all_recs: List[str] = []
+        all_recs: list[str] = []
         for result in results.values():
             all_recs.extend(result.feasibility.recommendations)
         # Deduplicate

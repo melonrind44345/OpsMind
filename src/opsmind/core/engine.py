@@ -1,16 +1,16 @@
 """Main OpsMind engine - orchestrates the discovery, assessment, reporting, remediation workflow."""
 
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from opsmind.core.events import Event, EventBus, EventType
 from opsmind.core.exceptions import (
     AssessmentError,
     DiscoveryError,
-    OpsMindError,
     RemediationError,
     ReportGenerationError,
 )
+from opsmind.discovery.engines.base import BaseDiscoveryEngine
 from opsmind.schemas.assessment import AssessmentResult
 from opsmind.schemas.discovery import DiscoveryMethod, DiscoveryResult
 from opsmind.schemas.report import DetailLevel, ReportData, ReportFormat
@@ -22,7 +22,7 @@ class OpsMindEngine:
     Coordinates discovery -> assessment -> reporting -> remediation pipeline.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, config: dict[str, Any] | None = None) -> None:
         self.config = config or {}
         self.event_bus = EventBus()
         self._register_default_handlers()
@@ -41,9 +41,9 @@ class OpsMindEngine:
         self,
         target: str,
         method: str = "auto",
-        inventory: Optional[str] = None,
-        ssh_user: Optional[str] = None,
-        ssh_key: Optional[str] = None,
+        inventory: str | None = None,
+        ssh_user: str | None = None,
+        ssh_key: str | None = None,
         parallel: bool = True,
     ) -> DiscoveryResult:
         """Execute discovery on target host(s).
@@ -99,15 +99,18 @@ class OpsMindEngine:
         duration = (time.time() - start_time) * 1000
         result.total_duration_ms = duration
 
-        self.event_bus.emit_simple(EventType.DISCOVERY_COMPLETED, {
-            "target": target,
-            "duration_ms": duration,
-            "hosts": result.total_hosts,
-        })
+        self.event_bus.emit_simple(
+            EventType.DISCOVERY_COMPLETED,
+            {
+                "target": target,
+                "duration_ms": duration,
+                "hosts": result.total_hosts,
+            },
+        )
 
         return result
 
-    def assess(self, discovery_result: DiscoveryResult, detail_level: str = "detailed") -> Dict[str, AssessmentResult]:
+    def assess(self, discovery_result: DiscoveryResult, detail_level: str = "detailed") -> dict[str, AssessmentResult]:
         """Assess discovery results for containerization feasibility.
 
         Args:
@@ -117,25 +120,28 @@ class OpsMindEngine:
         Returns:
             Dict of host -> AssessmentResult
         """
-        from opsmind.assessment.evaluators.feasibility import ContainerizationFeasibilityEvaluator
         from opsmind.assessment.evaluators.complexity import ComplexityEvaluator
+        from opsmind.assessment.evaluators.feasibility import ContainerizationFeasibilityEvaluator
         from opsmind.assessment.evaluators.security import SecurityEvaluator
 
-        self.event_bus.emit_simple(EventType.ASSESSMENT_STARTED, {
-            "hosts": list(discovery_result.hosts.keys()),
-        })
+        self.event_bus.emit_simple(
+            EventType.ASSESSMENT_STARTED,
+            {
+                "hosts": list(discovery_result.hosts.keys()),
+            },
+        )
 
         feasibility = ContainerizationFeasibilityEvaluator()
         complexity = ComplexityEvaluator()
         security = SecurityEvaluator()
 
-        results: Dict[str, AssessmentResult] = {}
+        results: dict[str, AssessmentResult] = {}
 
         for hostname, host_data in discovery_result.hosts.items():
             try:
                 feas_report = feasibility.evaluate(host_data)
                 comp_report = complexity.evaluate(host_data, detail_level=detail_level)
-                sec_report = security.evaluate(host_data)
+                security.evaluate(host_data)
 
                 results[hostname] = AssessmentResult(
                     host=hostname,
@@ -148,18 +154,21 @@ class OpsMindEngine:
             except Exception as exc:
                 raise AssessmentError(f"Assessment failed for {hostname}: {exc}") from exc
 
-        self.event_bus.emit_simple(EventType.ASSESSMENT_COMPLETED, {
-            "hosts": len(results),
-        })
+        self.event_bus.emit_simple(
+            EventType.ASSESSMENT_COMPLETED,
+            {
+                "hosts": len(results),
+            },
+        )
 
         return results
 
     def generate_report(
         self,
-        assessment_results: Dict[str, AssessmentResult],
+        assessment_results: dict[str, AssessmentResult],
         format: str = "markdown",
         detail_level: str = "detailed",
-        output_dir: Optional[str] = None,
+        output_dir: str | None = None,
     ) -> ReportData:
         """Generate assessment report.
 
@@ -174,16 +183,17 @@ class OpsMindEngine:
         """
         import os
 
-        from opsmind.reporting.generators.markdown import MarkdownReportGenerator
-        from opsmind.reporting.generators.json import JSONReportGenerator
+        from opsmind.reporting.generators.base import BaseReportGenerator
         from opsmind.reporting.generators.html import HTMLReportGenerator
+        from opsmind.reporting.generators.json import JSONReportGenerator
+        from opsmind.reporting.generators.markdown import MarkdownReportGenerator
 
         self.event_bus.emit_simple(EventType.REPORT_GENERATION_STARTED, {"format": format})
 
         detail = DetailLevel(detail_level)
         report_fmt = ReportFormat(format)
 
-        generators = {
+        generators: dict[ReportFormat, type[BaseReportGenerator]] = {
             ReportFormat.MARKDOWN: MarkdownReportGenerator,
             ReportFormat.JSON: JSONReportGenerator,
             ReportFormat.HTML: HTMLReportGenerator,
@@ -204,19 +214,22 @@ class OpsMindEngine:
         output_path = os.path.join(output_dir, f"opsmind_report.{format}")
         generator.export(report_data, output_path)
 
-        self.event_bus.emit_simple(EventType.REPORT_GENERATION_COMPLETED, {
-            "format": format,
-            "path": output_path,
-        })
+        self.event_bus.emit_simple(
+            EventType.REPORT_GENERATION_COMPLETED,
+            {
+                "format": format,
+                "path": output_path,
+            },
+        )
 
         return report_data
 
     def generate_remediation(
         self,
-        assessment_results: Dict[str, AssessmentResult],
-        output_dir: Optional[str] = None,
-        optimize: Optional[str] = None,
-    ) -> Dict[str, List[str]]:
+        assessment_results: dict[str, AssessmentResult],
+        output_dir: str | None = None,
+        optimize: str | None = None,
+    ) -> dict[str, list[str]]:
         """Generate remediation artifacts.
 
         Args:
@@ -235,7 +248,7 @@ class OpsMindEngine:
         self.event_bus.emit_simple(EventType.REMEDIATION_STARTED, {})
 
         output_dir = output_dir or os.getcwd()
-        artifacts: Dict[str, List[str]] = {}
+        artifacts: dict[str, list[str]] = {}
 
         try:
             docker_gen = DockerGenerator(output_dir=output_dir)
@@ -248,9 +261,12 @@ class OpsMindEngine:
         except Exception as exc:
             raise RemediationError(f"Remediation generation failed: {exc}") from exc
 
-        self.event_bus.emit_simple(EventType.REMEDIATION_COMPLETED, {
-            "artifacts": artifacts,
-        })
+        self.event_bus.emit_simple(
+            EventType.REMEDIATION_COMPLETED,
+            {
+                "artifacts": artifacts,
+            },
+        )
 
         return artifacts
 
@@ -260,10 +276,10 @@ class OpsMindEngine:
         method: str = "auto",
         report_format: str = "markdown",
         detail_level: str = "detailed",
-        output_dir: Optional[str] = None,
+        output_dir: str | None = None,
         generate_remediation: bool = False,
-        optimize: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        optimize: str | None = None,
+    ) -> dict[str, Any]:
         """Run the full discovery -> assessment -> reporting pipeline.
 
         Args:
@@ -286,10 +302,15 @@ class OpsMindEngine:
         assessment_results = self.assess(discovery_result, detail_level=detail_level)
         self.event_bus.emit_simple(EventType.WORKFLOW_STEP, {"step": "assessment_complete"})
 
-        report_data = self.generate_report(assessment_results, format=report_format, detail_level=detail_level, output_dir=output_dir)
+        report_data = self.generate_report(
+            assessment_results,
+            format=report_format,
+            detail_level=detail_level,
+            output_dir=output_dir,
+        )
         self.event_bus.emit_simple(EventType.WORKFLOW_STEP, {"step": "report_complete"})
 
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "discovery": discovery_result,
             "assessment": assessment_results,
             "report": report_data,
@@ -317,7 +338,9 @@ class OpsMindEngine:
         except ValueError:
             raise DiscoveryError(f"Invalid discovery method: {method}. Use: ansible, native, mock, auto")
 
-    def _select_engine(self, target: str, inventory: Optional[str], ssh_user: Optional[str], ssh_key: Optional[str]) -> Any:
+    def _select_engine(
+        self, target: str, inventory: str | None, ssh_user: str | None, ssh_key: str | None
+    ) -> BaseDiscoveryEngine:
         """Auto-select the best available engine."""
         from opsmind.discovery.engines.ansible_engine import AnsibleDiscoveryEngine
         from opsmind.discovery.engines.mock_engine import MockDiscoveryEngine
@@ -329,7 +352,10 @@ class OpsMindEngine:
                 ssh_config={"user": ssh_user, "key_file": ssh_key},
             )
             if engine.is_available:
-                self.event_bus.emit_simple(EventType.INFO, {"engine": "ansible", "reason": "Ansible available for localhost"})
+                self.event_bus.emit_simple(
+                    EventType.INFO,
+                    {"engine": "ansible", "reason": "Ansible available for localhost"},
+                )
                 return engine
 
             native = NativeDiscoveryEngine()
@@ -344,9 +370,12 @@ class OpsMindEngine:
             return engine
 
         mock = MockDiscoveryEngine()
-        self.event_bus.emit_simple(EventType.ENGINE_FALLBACK, {
-            "from": "ansible",
-            "to": "mock",
-            "reason": "Ansible not available for remote discovery",
-        })
+        self.event_bus.emit_simple(
+            EventType.ENGINE_FALLBACK,
+            {
+                "from": "ansible",
+                "to": "mock",
+                "reason": "Ansible not available for remote discovery",
+            },
+        )
         return mock

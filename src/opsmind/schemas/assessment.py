@@ -1,13 +1,13 @@
 """Pydantic models for assessment data."""
 
 from datetime import datetime
-from enum import Enum
-from typing import Any, Dict, List, Optional
+from enum import StrEnum
+from typing import Any
 
 from pydantic import BaseModel, Field
 
 
-class AssessmentDimension(str, Enum):
+class AssessmentDimension(StrEnum):
     """Assessment dimension categories."""
 
     HARDWARE_COMPATIBILITY = "hardware_compatibility"
@@ -16,7 +16,7 @@ class AssessmentDimension(str, Enum):
     SECURITY_BASELINE = "security_baseline"
 
 
-class ComplexityLevel(str, Enum):
+class ComplexityLevel(StrEnum):
     """Complexity levels for modernization."""
 
     SIMPLE = "simple"
@@ -25,7 +25,7 @@ class ComplexityLevel(str, Enum):
     BLOCKER = "blocker"
 
 
-class RiskLevel(str, Enum):
+class RiskLevel(StrEnum):
     """Risk level assessment."""
 
     LOW = "low"
@@ -40,9 +40,9 @@ class DimensionScore(BaseModel):
     dimension: AssessmentDimension
     score: float = Field(default=0.0, ge=0.0, le=100.0, description="Score 0-100")
     weight: float = Field(default=0.0, ge=0.0, le=1.0, description="Weight in overall calculation")
-    findings: List[str] = Field(default_factory=list, description="Specific findings")
-    issues: List[str] = Field(default_factory=list, description="Identified issues")
-    recommendations: List[str] = Field(default_factory=list, description="Recommendations")
+    findings: list[str] = Field(default_factory=list, description="Specific findings")
+    issues: list[str] = Field(default_factory=list, description="Identified issues")
+    recommendations: list[str] = Field(default_factory=list, description="Recommendations")
 
 
 class IssueDetail(BaseModel):
@@ -54,18 +54,18 @@ class IssueDetail(BaseModel):
     description: str = Field(description="Detailed description")
     impact: str = Field(description="Impact description")
     recommendation: str = Field(description="Recommended action")
-    affected_components: List[str] = Field(default_factory=list, description="Affected components")
+    affected_components: list[str] = Field(default_factory=list, description="Affected components")
 
 
 class FeasibilityReport(BaseModel):
     """Containerization feasibility assessment report."""
 
     overall_score: float = Field(default=0.0, ge=0.0, le=100.0, description="Overall feasibility score")
-    dimension_scores: List[DimensionScore] = Field(default_factory=list, description="Per-dimension scores")
+    dimension_scores: list[DimensionScore] = Field(default_factory=list, description="Per-dimension scores")
     complexity: ComplexityLevel = Field(default=ComplexityLevel.MODERATE, description="Overall complexity")
     risk_level: RiskLevel = Field(default=RiskLevel.MEDIUM, description="Overall risk level")
-    issues: List[IssueDetail] = Field(default_factory=list, description="All identified issues")
-    recommendations: List[str] = Field(default_factory=list, description="Top recommendations")
+    issues: list[IssueDetail] = Field(default_factory=list, description="All identified issues")
+    recommendations: list[str] = Field(default_factory=list, description="Top recommendations")
     summary: str = Field(default="", description="Executive summary")
     assess_algorithm: str = Field(default="opsmind-weighted-v1", description="Assessment algorithm used")
 
@@ -73,12 +73,12 @@ class FeasibilityReport(BaseModel):
 class ComplexityAssessment(BaseModel):
     """Detailed complexity assessment."""
 
-    level: ComplexityLevel = Field(description="Complexity level")
+    level: ComplexityLevel = Field(default=ComplexityLevel.SIMPLE, description="Complexity level")
     score: float = Field(default=0.0, ge=0.0, le=100.0, description="Complexity score")
-    factors: Dict[str, float] = Field(default_factory=dict, description="Contributing factors and their scores")
+    factors: dict[str, float] = Field(default_factory=dict, description="Contributing factors and their scores")
     breakdown: str = Field(default="", description="Detailed breakdown")
-    estimated_effort_days: Optional[int] = Field(default=None, description="Estimated effort in days")
-    skill_requirements: List[str] = Field(default_factory=list, description="Required skills")
+    estimated_effort_days: int | None = Field(default=None, description="Estimated effort in days")
+    skill_requirements: list[str] = Field(default_factory=list, description="Required skills")
 
 
 class ResourceSizing(BaseModel):
@@ -89,16 +89,16 @@ class ResourceSizing(BaseModel):
     storage_gb: float = Field(default=10.0, ge=0.1, description="Recommended storage in GB")
     replicas: int = Field(default=1, ge=1, description="Recommended replica count")
     rationale: str = Field(default="", description="Sizing rationale")
-    optimizations: List[str] = Field(default_factory=list, description="Optimization suggestions")
+    optimizations: list[str] = Field(default_factory=list, description="Optimization suggestions")
 
 
 class MigrationStrategy(BaseModel):
     """Migration strategy recommendations."""
 
     strategy_type: str = Field(default="", description="Strategy type (rehost, refactor, rebuild, etc.)")
-    phases: List[Dict[str, Any]] = Field(default_factory=list, description="Migration phases")
-    estimated_duration_days: Optional[int] = Field(default=None, description="Total estimated duration")
-    risks: List[str] = Field(default_factory=list, description="Identified risks")
+    phases: list[dict[str, Any]] = Field(default_factory=list, description="Migration phases")
+    estimated_duration_days: int | None = Field(default=None, description="Total estimated duration")
+    risks: list[str] = Field(default_factory=list, description="Identified risks")
     rollback_strategy: str = Field(default="", description="Rollback plan description")
 
 

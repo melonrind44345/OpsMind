@@ -5,18 +5,22 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import typer
 from rich.console import Console
 from rich.panel import Panel
-from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn, TimeElapsedColumn
-from rich.syntax import Syntax
+from rich.progress import (
+    BarColumn,
+    Progress,
+    SpinnerColumn,
+    TaskProgressColumn,
+    TextColumn,
+    TimeElapsedColumn,
+)
 from rich.table import Table
-from rich.text import Text
 
 from opsmind.core.engine import OpsMindEngine
-from opsmind.schemas.report import ReportFormat
 
 app = typer.Typer(
     name="opsmind",
@@ -28,33 +32,37 @@ app = typer.Typer(
 console = Console()
 err_console = Console(stderr=True)
 
-_state: Dict[str, Any] = {}
+_state: dict[str, Any] = {}
 
 
 def _get_engine() -> OpsMindEngine:
     """Get or create the OpsMind engine."""
     if "engine" not in _state:
         _state["engine"] = OpsMindEngine()
-    return _state["engine"]
+    return _state["engine"]  # type: ignore[no-any-return]
 
 
 def _version_callback(value: bool) -> None:
     if value:
-        console.print(Panel(
-            "[bold blue]OpsMind[/] [bold]v0.1.0[/]\n"
-            "Ansible-Driven Modernization Platform\n"
-            "License: MIT",
-            title="Version",
-            border_style="blue",
-        ))
+        console.print(
+            Panel(
+                "[bold blue]OpsMind[/] [bold]v0.1.0[/]\nAnsible-Driven Modernization Platform\nLicense: MIT",
+                title="Version",
+                border_style="blue",
+            )
+        )
         raise typer.Exit()
 
 
 @app.callback()
 def main(
     version: bool = typer.Option(
-        False, "--version", "-V", help="Show version and exit",
-        callback=_version_callback, is_eager=True,
+        False,
+        "--version",
+        "-V",
+        help="Show version and exit",
+        callback=_version_callback,
+        is_eager=True,
     ),
 ) -> None:
     """OpsMind - Legacy System Modernization Assessment Platform."""
@@ -64,26 +72,37 @@ def main(
 @app.command()
 def discover(
     target: str = typer.Argument(
-        ..., help="Target hostname, IP, or inventory group (e.g., localhost, 192.168.1.100, web-servers)"
+        ...,
+        help="Target hostname, IP, or inventory group (e.g., localhost, 192.168.1.100, web-servers)",
     ),
     method: str = typer.Option(
-        "auto", "--method", "-m",
+        "auto",
+        "--method",
+        "-m",
         help="Discovery method: ansible, native, mock, auto",
     ),
-    inventory: Optional[str] = typer.Option(
-        None, "--inventory", "-i",
+    inventory: str | None = typer.Option(
+        None,
+        "--inventory",
+        "-i",
         help="Path to Ansible inventory file",
     ),
-    ssh_user: Optional[str] = typer.Option(
-        None, "--ssh-user", "-u",
+    ssh_user: str | None = typer.Option(
+        None,
+        "--ssh-user",
+        "-u",
         help="SSH username for remote hosts",
     ),
-    ssh_key: Optional[str] = typer.Option(
-        None, "--ssh-key", "-k",
+    ssh_key: str | None = typer.Option(
+        None,
+        "--ssh-key",
+        "-k",
         help="SSH private key path",
     ),
-    output: Optional[str] = typer.Option(
-        None, "--output", "-o",
+    output: str | None = typer.Option(
+        None,
+        "--output",
+        "-o",
         help="Output file for discovery results (JSON)",
     ),
 ) -> None:
@@ -120,14 +139,16 @@ def discover(
 
     # Display summary
     console.print()
-    console.print(Panel(
-        f"[bold]Discovery Complete[/]\n\n"
-        f"[green]✓[/] Successful hosts: {result.successful_hosts}\n"
-        f"[red]✗[/] Failed hosts: {result.failed_hosts}\n"
-        f"[blue]⏱[/] Duration: {result.total_duration_ms:.0f}ms",
-        title="Results",
-        border_style="green",
-    ))
+    console.print(
+        Panel(
+            f"[bold]Discovery Complete[/]\n\n"
+            f"[green]✓[/] Successful hosts: {result.successful_hosts}\n"
+            f"[red]✗[/] Failed hosts: {result.failed_hosts}\n"
+            f"[blue]⏱[/] Duration: {result.total_duration_ms:.0f}ms",
+            title="Results",
+            border_style="green",
+        )
+    )
 
     for hostname, host_data in result.hosts.items():
         hw = host_data.hardware
@@ -145,8 +166,10 @@ def discover(
         table.add_row("Disks", f"{len(hw.disks)} mount points")
         table.add_row("Services", f"{len(sw.services)} running")
         table.add_row("Packages", f"{len(sw.packages)} installed")
-        table.add_row("Security", f"Firewall: {'✓' if sec.firewall_active else '✗'}, "
-                      f"Updates: {sec.security_updates_count or 'N/A'}")
+        table.add_row(
+            "Security",
+            f"Firewall: {'✓' if sec.firewall_active else '✗'}, Updates: {sec.security_updates_count or 'N/A'}",
+        )
         table.add_row("Source", host_data.metadata.source.value)
         table.add_row("Confidence", host_data.metadata.confidence.value)
 
@@ -174,15 +197,21 @@ def discover(
 @app.command()
 def assess(
     report_format: str = typer.Option(
-        "markdown", "--report-format", "-f",
+        "markdown",
+        "--report-format",
+        "-f",
         help="Report format: markdown, json, html",
     ),
     detail_level: str = typer.Option(
-        "detailed", "--detail-level", "-d",
+        "detailed",
+        "--detail-level",
+        "-d",
         help="Detail level: executive, summary, detailed, raw",
     ),
-    output: Optional[str] = typer.Option(
-        None, "--output", "-o",
+    output: str | None = typer.Option(
+        None,
+        "--output",
+        "-o",
         help="Output path for the report",
     ),
 ) -> None:
@@ -193,7 +222,8 @@ def assess(
         engine = _get_engine()
         try:
             with Progress(
-                SpinnerColumn(), TextColumn("[progress.description]{task.description}"),
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
                 console=console,
             ) as p:
                 p.add_task("Discovering localhost...")
@@ -227,17 +257,19 @@ def assess(
     for hostname, result in assessment_results.items():
         feas = result.feasibility
         color = "green" if feas.overall_score >= 70 else "yellow" if feas.overall_score >= 40 else "red"
-        console.print(Panel(
-            f"[bold]{hostname}[/]\n\n"
-            f"Feasibility Score: [bold {color}]{feas.overall_score:.1f}/100[/]\n"
-            f"Complexity: [bold]{feas.complexity.value.upper()}[/]\n"
-            f"Risk Level: [bold]{feas.risk_level.value.upper()}[/]\n"
-            f"Strategy: {result.migration_strategy.strategy_type}\n"
-            f"Estimated Effort: {result.complexity.estimated_effort_days} days\n\n"
-            f"{feas.summary}",
-            title="Assessment Result",
-            border_style=color,
-        ))
+        console.print(
+            Panel(
+                f"[bold]{hostname}[/]\n\n"
+                f"Feasibility Score: [bold {color}]{feas.overall_score:.1f}/100[/]\n"
+                f"Complexity: [bold]{feas.complexity.value.upper()}[/]\n"
+                f"Risk Level: [bold]{feas.risk_level.value.upper()}[/]\n"
+                f"Strategy: {result.migration_strategy.strategy_type}\n"
+                f"Estimated Effort: {result.complexity.estimated_effort_days} days\n\n"
+                f"{feas.summary}",
+                title="Assessment Result",
+                border_style=color,
+            )
+        )
 
     # Generate report
     console.print(f"\n[bold]Generating {report_format} report...[/]")
@@ -263,15 +295,17 @@ def assess(
 
 @app.command()
 def generate(
-    artifact: str = typer.Argument(
-        ..., help="Artifact to generate: docker, migration-plan"
-    ),
-    optimize: Optional[str] = typer.Option(
-        None, "--optimize", "-o",
+    artifact: str = typer.Argument(..., help="Artifact to generate: docker, migration-plan"),
+    optimize: str | None = typer.Option(
+        None,
+        "--optimize",
+        "-o",
         help="Optimization target: performance, size, cost",
     ),
-    output_dir: Optional[str] = typer.Option(
-        None, "--output-dir", "-d",
+    output_dir: str | None = typer.Option(
+        None,
+        "--output-dir",
+        "-d",
         help="Output directory for generated artifacts",
     ),
 ) -> None:
@@ -302,6 +336,7 @@ def generate(
                 files = artifacts.get("docker", [])
             elif artifact in ("migration-plan", "migration_plan"):
                 from opsmind.remediation.generators.migration_plan import MigrationPlanGenerator
+
                 gen = MigrationPlanGenerator(output_dir=output_dir)
                 files = gen.generate(_state["last_assessment"])
             else:
@@ -323,19 +358,23 @@ def generate(
 
 @app.command()
 def report(
-    action: str = typer.Argument(
-        "show", help="Action: show, export, compare"
-    ),
+    action: str = typer.Argument("show", help="Action: show, export, compare"),
     format: str = typer.Option(
-        "markdown", "--format", "-f",
+        "markdown",
+        "--format",
+        "-f",
         help="Report format: markdown, json, html",
     ),
-    output: Optional[str] = typer.Option(
-        None, "--output", "-o",
+    output: str | None = typer.Option(
+        None,
+        "--output",
+        "-o",
         help="Output path",
     ),
-    baseline: Optional[str] = typer.Option(
-        None, "--baseline", "-b",
+    baseline: str | None = typer.Option(
+        None,
+        "--baseline",
+        "-b",
         help="Baseline report path for comparison",
     ),
 ) -> None:
@@ -346,14 +385,16 @@ def report(
             raise typer.Exit(code=1)
         report_data = _state["last_report_data"]
 
-        console.print(Panel(
-            f"[bold]{report_data.metadata.title}[/]\n\n"
-            f"Generated: {report_data.metadata.generated_at.strftime('%Y-%m-%d %H:%M:%S')}\n"
-            f"Hosts: {report_data.metadata.total_hosts}\n"
-            f"Confidence: {report_data.metadata.confidence}",
-            title="Report Summary",
-            border_style="blue",
-        ))
+        console.print(
+            Panel(
+                f"[bold]{report_data.metadata.title}[/]\n\n"
+                f"Generated: {report_data.metadata.generated_at.strftime('%Y-%m-%d %H:%M:%S')}\n"
+                f"Hosts: {report_data.metadata.total_hosts}\n"
+                f"Confidence: {report_data.metadata.confidence}",
+                title="Report Summary",
+                border_style="blue",
+            )
+        )
         console.print(f"\n{report_data.executive_summary}")
 
         if report_data.sections:
@@ -396,7 +437,7 @@ def report(
         try:
             with open(baseline) as f:
                 baseline_data = json.load(f)
-        except (json.JSONDecodeError, IOError) as exc:
+        except (OSError, json.JSONDecodeError) as exc:
             err_console.print(f"[red]Failed to read baseline: {exc}[/]")
             raise typer.Exit(code=1)
 
@@ -405,15 +446,16 @@ def report(
         baseline_score = baseline_data.get("assessment_summary", {}).get("average_score", 0)
         delta = current_score - baseline_score
 
-        delta_color = "green" if delta >= 0 else "red"
-        console.print(Panel(
-            f"[bold]Report Comparison[/]\n\n"
-            f"Baseline Score: {baseline_score:.1f}\n"
-            f"Current Score:  {current_score:.1f}\n"
-            f"Delta:          [{'green' if delta >= 0 else 'red'}]{delta:+.1f}[/]",
-            title="Comparison",
-            border_style="blue",
-        ))
+        console.print(
+            Panel(
+                f"[bold]Report Comparison[/]\n\n"
+                f"Baseline Score: {baseline_score:.1f}\n"
+                f"Current Score:  {current_score:.1f}\n"
+                f"Delta:          [{'green' if delta >= 0 else 'red'}]{delta:+.1f}[/]",
+                title="Comparison",
+                border_style="blue",
+            )
+        )
 
     else:
         err_console.print(f"[red]Unknown action: {action}. Use: show, export, compare[/]")
@@ -423,19 +465,23 @@ def report(
 @app.command()
 def validate(
     check: bool = typer.Option(
-        False, "--check", "-c",
+        False,
+        "--check",
+        "-c",
         help="Check configuration validity",
     ),
     fix: bool = typer.Option(
-        False, "--fix", "-x",
+        False,
+        "--fix",
+        "-x",
         help="Attempt to fix configuration issues",
     ),
 ) -> None:
     """Validate system configuration and dependencies."""
     from opsmind.utils.validation import validate_config
 
-    issues: List[str] = []
-    warnings: List[str] = []
+    issues: list[str] = []
+    warnings: list[str] = []
 
     console.print("[bold]OpsMind System Validation[/]\n")
 
@@ -448,6 +494,7 @@ def validate(
 
     # Check Ansible
     from opsmind.utils.ansible_utils import check_ansible_available, get_ansible_version
+
     if check_ansible_available():
         ver = get_ansible_version()
         console.print(f"[green]✓[/] Ansible: {ver or 'installed'}")
@@ -456,13 +503,12 @@ def validate(
         console.print("[yellow]○[/] Ansible: not installed (fallback available)")
 
     # Check Docker
-    docker_available = False
     try:
         import subprocess
+
         result = subprocess.run(["docker", "--version"], capture_output=True, text=True, timeout=5)
         if result.returncode == 0:
             console.print(f"[green]✓[/] Docker: {result.stdout.strip()}")
-            docker_available = True
     except (FileNotFoundError, subprocess.TimeoutExpired):
         warnings.append("Docker not installed - remediation generation unavailable")
         console.print("[yellow]○[/] Docker: not installed")
@@ -470,7 +516,8 @@ def validate(
     # Check psutil
     try:
         import psutil  # noqa: F401
-        console.print(f"[green]✓[/] psutil: installed")
+
+        console.print("[green]✓[/] psutil: installed")
     except ImportError:
         warnings.append("psutil not installed - native discovery limited")
         console.print("[yellow]○[/] psutil: not installed")
@@ -499,42 +546,51 @@ def validate(
 
 @app.command()
 def pipeline(
-    target: str = typer.Argument(
-        "localhost", help="Target hostname, IP, or group"
-    ),
+    target: str = typer.Argument("localhost", help="Target hostname, IP, or group"),
     method: str = typer.Option(
-        "auto", "--method", "-m",
+        "auto",
+        "--method",
+        "-m",
         help="Discovery method",
     ),
     report_format: str = typer.Option(
-        "markdown", "--report-format", "-f",
+        "markdown",
+        "--report-format",
+        "-f",
         help="Report format",
     ),
-    output_dir: Optional[str] = typer.Option(
-        None, "--output-dir", "-o",
+    output_dir: str | None = typer.Option(
+        None,
+        "--output-dir",
+        "-o",
         help="Output directory",
     ),
     generate_remediation: bool = typer.Option(
-        False, "--remediation", "-r",
+        False,
+        "--remediation",
+        "-r",
         help="Generate remediation artifacts",
     ),
-    optimize: Optional[str] = typer.Option(
-        None, "--optimize",
+    optimize: str | None = typer.Option(
+        None,
+        "--optimize",
         help="Optimization target for remediation",
     ),
 ) -> None:
     """Run the complete discovery -> assessment -> reporting pipeline."""
     output_dir = output_dir or os.getcwd()
 
-    console.print(Panel(
-        "[bold blue]OpsMind Pipeline[/]\n\n"
-        f"Target: [green]{target}[/]\n"
-        f"Method: {method}\n"
-        f"Report: {report_format}\n"
-        f"Output: {output_dir}",
-        title="Configuration",
-        border_style="blue",
-    ))
+    console.print(
+        Panel(
+            "[bold blue]OpsMind Pipeline[/]\n\n"
+            f"Target: [green]{target}[/]\n"
+            f"Method: {method}\n"
+            f"Report: {report_format}\n"
+            f"Output: {output_dir}",
+            title="Configuration",
+            border_style="blue",
+        )
+    )
 
     engine = _get_engine()
 
@@ -573,7 +629,9 @@ def pipeline(
         rep_task = progress.add_task(f"[cyan]Phase 3/3: Generating {report_format} report...", total=None)
         try:
             engine.generate_report(
-                asm_results, format=report_format, output_dir=output_dir,
+                asm_results,
+                format=report_format,
+                output_dir=output_dir,
             )
         except Exception as exc:
             progress.stop()
@@ -584,15 +642,17 @@ def pipeline(
     total_time = time.time() - overall_start
 
     console.print()
-    console.print(Panel(
-        f"[bold green]Pipeline Complete![/]\n\n"
-        f"Discovery: [green]{disc_result.successful_hosts}[/] hosts successful\n"
-        f"Assessment: [green]{len(asm_results)}[/] hosts evaluated\n"
-        f"Report: {output_dir}/opsmind_report.{report_format}\n"
-        f"Total Time: [bold]{total_time:.1f}s[/]",
-        title="Summary",
-        border_style="green",
-    ))
+    console.print(
+        Panel(
+            f"[bold green]Pipeline Complete![/]\n\n"
+            f"Discovery: [green]{disc_result.successful_hosts}[/] hosts successful\n"
+            f"Assessment: [green]{len(asm_results)}[/] hosts evaluated\n"
+            f"Report: {output_dir}/opsmind_report.{report_format}\n"
+            f"Total Time: [bold]{total_time:.1f}s[/]",
+            title="Summary",
+            border_style="green",
+        )
+    )
 
     # Show scores
     table = Table(title="Host Assessment Scores")
@@ -621,17 +681,20 @@ def pipeline(
 @app.command()
 def demo() -> None:
     """Run an interactive demo showcasing OpsMind capabilities."""
-    console.print(Panel.fit(
-        "[bold blue]OpsMind Interactive Demo[/]\n\n"
-        "This demo will showcase OpsMind's key capabilities:\n"
-        "1. [cyan]System Discovery[/] - Mock legacy system detection\n"
-        "2. [cyan]Intelligent Assessment[/] - Multi-dimension scoring\n"
-        "3. [cyan]Report Generation[/] - Professional reports\n"
-        "4. [cyan]Docker Artifacts[/] - Automated containerization",
-        border_style="blue",
-    ))
+    console.print(
+        Panel.fit(
+            "[bold blue]OpsMind Interactive Demo[/]\n\n"
+            "This demo will showcase OpsMind's key capabilities:\n"
+            "1. [cyan]System Discovery[/] - Mock legacy system detection\n"
+            "2. [cyan]Intelligent Assessment[/] - Multi-dimension scoring\n"
+            "3. [cyan]Report Generation[/] - Professional reports\n"
+            "4. [cyan]Docker Artifacts[/] - Automated containerization",
+            border_style="blue",
+        )
+    )
 
     from opsmind.core.engine import OpsMindEngine
+
     engine = OpsMindEngine()
 
     # Phase 1: Discover mock legacy systems
@@ -657,7 +720,11 @@ def demo() -> None:
     table.add_row("CPU", f"{hw.cpu.model}")
     table.add_row("Cores", f"{hw.cpu.cores}C / {hw.cpu.threads}T")
     table.add_row("Memory", f"{hw.memory.total_gb}GB total, {hw.memory.available_gb}GB available")
-    table.add_row("Disks", f"{len(hw.disks)} mount points ({(sum(d.used_gb for d in hw.disks)/sum(d.total_gb for d in hw.disks))*100:.0f}% utilized)")
+    table.add_row(
+        "Disks",
+        f"{len(hw.disks)} mount points "
+        f"({(sum(d.used_gb for d in hw.disks) / sum(d.total_gb for d in hw.disks)) * 100:.0f}% utilized)",
+    )
     table.add_row("Data Source", "Mock (Demo Mode)")
     console.print(table)
 
@@ -671,15 +738,17 @@ def demo() -> None:
     feas = result.feasibility
 
     color = "green" if feas.overall_score >= 70 else "yellow" if feas.overall_score >= 40 else "red"
-    console.print(Panel(
-        f"Overall Score: [bold {color}]{feas.overall_score:.1f}/100[/]\n"
-        f"Complexity: [bold]{feas.complexity.value.upper()}[/]\n"
-        f"Risk Level: [bold]{feas.risk_level.value.upper()}[/]\n"
-        f"Strategy: [bold]{result.migration_strategy.strategy_type}[/]\n"
-        f"Estimated Effort: {result.complexity.estimated_effort_days} days",
-        title="Assessment Result",
-        border_style=color,
-    ))
+    console.print(
+        Panel(
+            f"Overall Score: [bold {color}]{feas.overall_score:.1f}/100[/]\n"
+            f"Complexity: [bold]{feas.complexity.value.upper()}[/]\n"
+            f"Risk Level: [bold]{feas.risk_level.value.upper()}[/]\n"
+            f"Strategy: [bold]{result.migration_strategy.strategy_type}[/]\n"
+            f"Estimated Effort: {result.complexity.estimated_effort_days} days",
+            title="Assessment Result",
+            border_style=color,
+        )
+    )
 
     dim_table = Table(title="Dimension Scores")
     dim_table.add_column("Dimension", style="cyan")
@@ -727,19 +796,21 @@ def demo() -> None:
 
     # Final summary
     console.print("\n[bold green]Demo Complete![/]")
-    console.print(Panel(
-        "[bold]Generated Artifacts:[/]\n\n"
-        f"[blue]•[/] opsmind_demo_report.md\n"
-        f"[blue]•[/] opsmind_demo_report.json\n"
-        f"[blue]•[/] opsmind_demo_report.html\n"
-        f"[blue]•[/] opsmind_artifacts/docker/legacy-app-01/Dockerfile\n"
-        f"[blue]•[/] opsmind_artifacts/docker/legacy-app-01/docker-compose.yml\n"
-        f"[blue]•[/] opsmind_artifacts/plans/legacy-app-01_migration_plan.md\n\n"
-        "Run [bold]opsmind discover localhost[/] for real system discovery!\n"
-        "Run [bold]opsmind pipeline <target>[/] for the full workflow!",
-        title="Summary",
-        border_style="green",
-    ))
+    console.print(
+        Panel(
+            "[bold]Generated Artifacts:[/]\n\n"
+            "[blue]•[/] opsmind_demo_report.md\n"
+            "[blue]•[/] opsmind_demo_report.json\n"
+            "[blue]•[/] opsmind_demo_report.html\n"
+            "[blue]•[/] opsmind_artifacts/docker/legacy-app-01/Dockerfile\n"
+            "[blue]•[/] opsmind_artifacts/docker/legacy-app-01/docker-compose.yml\n"
+            "[blue]•[/] opsmind_artifacts/plans/legacy-app-01_migration_plan.md\n\n"
+            "Run [bold]opsmind discover localhost[/] for real system discovery!\n"
+            "Run [bold]opsmind pipeline <target>[/] for the full workflow!",
+            title="Summary",
+            border_style="green",
+        )
+    )
 
 
 if __name__ == "__main__":

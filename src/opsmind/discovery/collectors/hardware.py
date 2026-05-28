@@ -1,8 +1,6 @@
 """Hardware data collector - supplementary hardware detection."""
 
-from typing import Any, Dict, Optional
-
-from opsmind.schemas.discovery import CPUInfo, DiskInfo, HardwareSpec, MemoryInfo, NetworkInterface
+from opsmind.schemas.discovery import DiskInfo, HardwareSpec, MemoryInfo
 
 
 class HardwareCollector:
@@ -17,7 +15,9 @@ class HardwareCollector:
             if hardware.system_vendor is None or hardware.system_vendor == "":
                 result = subprocess.run(
                     ["dmidecode", "-s", "system-manufacturer"],
-                    capture_output=True, text=True, timeout=5,
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
                 )
                 if result.returncode == 0:
                     hardware.system_vendor = result.stdout.strip()
@@ -25,7 +25,9 @@ class HardwareCollector:
             if hardware.system_model is None or hardware.system_model == "":
                 result = subprocess.run(
                     ["dmidecode", "-s", "system-product-name"],
-                    capture_output=True, text=True, timeout=5,
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
                 )
                 if result.returncode == 0:
                     hardware.system_model = result.stdout.strip()
@@ -35,7 +37,7 @@ class HardwareCollector:
         return hardware
 
     @staticmethod
-    def estimate_memory_type(memory: MemoryInfo) -> Optional[str]:
+    def estimate_memory_type(memory: MemoryInfo) -> str | None:
         """Estimate memory type based on total capacity and era."""
         if memory.total_gb <= 8:
             return "DDR3"
@@ -50,7 +52,4 @@ class HardwareCollector:
         """Estimate whether disk is SSD based on device name."""
         ssd_indicators = ["nvme", "ssd", "sd"]
         device_lower = disk.device.lower()
-        for indicator in ssd_indicators:
-            if indicator in device_lower:
-                return True
-        return False
+        return any(indicator in device_lower for indicator in ssd_indicators)

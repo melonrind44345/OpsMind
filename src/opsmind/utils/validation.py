@@ -2,10 +2,9 @@
 
 import ipaddress
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
-
-ValidationResult = Tuple[bool, Optional[str]]
+ValidationResult = tuple[bool, str | None]
 
 
 def validate_hostname(hostname: str) -> ValidationResult:
@@ -92,9 +91,9 @@ def validate_report_format(fmt: str) -> ValidationResult:
     return True, None
 
 
-def validate_config(config: Dict[str, Any]) -> List[str]:
+def validate_config(config: dict[str, Any]) -> list[str]:
     """Validate tool configuration."""
-    errors: List[str] = []
+    errors: list[str] = []
 
     if "discovery_method" in config:
         ok, msg = validate_discovery_method(config["discovery_method"])

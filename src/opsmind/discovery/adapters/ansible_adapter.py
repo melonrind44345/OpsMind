@@ -4,13 +4,11 @@ Handles the mapping from Ansible's fact naming convention to OpsMind's
 standardized data model with appropriate type conversions and validation.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, overload
 
 from opsmind.discovery.adapters.base_adapter import BaseAdapter
 from opsmind.schemas.discovery import (
     CPUInfo,
-    ConfidenceLevel,
-    DataSource,
     DiskInfo,
     HardwareSpec,
     MemoryInfo,
@@ -30,7 +28,7 @@ class AnsibleFactAdapter(BaseAdapter):
     OpsMind's standardized schema with type conversion and validation.
     """
 
-    def to_unified_model(self, facts: Dict[str, Any]) -> UnifiedDiscoveryModel:
+    def to_unified_model(self, facts: dict[str, Any]) -> UnifiedDiscoveryModel:
         """Convert Ansible facts dictionary to unified model.
 
         Args:
@@ -49,7 +47,7 @@ class AnsibleFactAdapter(BaseAdapter):
             security=security,
         )
 
-    def _to_hardware(self, facts: Dict[str, Any]) -> HardwareSpec:
+    def _to_hardware(self, facts: dict[str, Any]) -> HardwareSpec:
         """Extract hardware information from Ansible facts."""
         hostname = self._safe_get(facts, "ansible_hostname", "")
 
@@ -77,7 +75,7 @@ class AnsibleFactAdapter(BaseAdapter):
             uptime_seconds=uptime_seconds,
         )
 
-    def _to_cpu(self, facts: Dict[str, Any]) -> CPUInfo:
+    def _to_cpu(self, facts: dict[str, Any]) -> CPUInfo:
         """Extract CPU information."""
         processor = facts.get("ansible_processor", [])
         cpu_model = ""
@@ -109,7 +107,7 @@ class AnsibleFactAdapter(BaseAdapter):
             flags=flags,
         )
 
-    def _to_memory(self, facts: Dict[str, Any]) -> MemoryInfo:
+    def _to_memory(self, facts: dict[str, Any]) -> MemoryInfo:
         """Extract memory information."""
         mem_total_mb = self._safe_float(facts, "ansible_memtotal_mb", 0)
         mem_free_mb = self._safe_float(facts, "ansible_memfree_mb", 0)
@@ -123,9 +121,9 @@ class AnsibleFactAdapter(BaseAdapter):
             swap_available_gb=round(swap_free_mb / 1024, 2),
         )
 
-    def _to_disks(self, facts: Dict[str, Any]) -> List[DiskInfo]:
+    def _to_disks(self, facts: dict[str, Any]) -> list[DiskInfo]:
         """Extract disk information."""
-        disks: List[DiskInfo] = []
+        disks: list[DiskInfo] = []
         mounts = facts.get("ansible_mounts", [])
         if not isinstance(mounts, list):
             return disks
@@ -138,22 +136,28 @@ class AnsibleFactAdapter(BaseAdapter):
                 used = self._safe_float(mount, "size_used", 0)
                 available_explicit = self._safe_float(mount, "size_available", total - used)
 
-                disks.append(DiskInfo(
-                    device=self._safe_get(mount, "device", ""),
-                    mount_point=self._safe_get(mount, "mount", ""),
-                    filesystem=self._safe_get(mount, "fstype", ""),
-                    total_gb=round(total / (1024 ** 3), 2) if total > 1e9 else round(total, 2),
-                    used_gb=round(used / (1024 ** 3), 2) if used > 1e9 else round(used, 2),
-                    available_gb=round(available_explicit / (1024 ** 3), 2) if available_explicit > 1e9 else round(available_explicit, 2),
-                    mount_options=self._safe_get(mount, "options", "").split(",") if isinstance(self._safe_get(mount, "options", ""), str) else [],
-                ))
+                disks.append(
+                    DiskInfo(
+                        device=self._safe_get(mount, "device", ""),
+                        mount_point=self._safe_get(mount, "mount", ""),
+                        filesystem=self._safe_get(mount, "fstype", ""),
+                        total_gb=round(total / (1024**3), 2) if total > 1e9 else round(total, 2),
+                        used_gb=round(used / (1024**3), 2) if used > 1e9 else round(used, 2),
+                        available_gb=round(available_explicit / (1024**3), 2)
+                        if available_explicit > 1e9
+                        else round(available_explicit, 2),
+                        mount_options=self._safe_get(mount, "options", "").split(",")
+                        if isinstance(self._safe_get(mount, "options", ""), str)
+                        else [],
+                    )
+                )
             except (ValueError, TypeError):
                 continue
         return disks
 
-    def _to_network(self, facts: Dict[str, Any]) -> List[NetworkInterface]:
+    def _to_network(self, facts: dict[str, Any]) -> list[NetworkInterface]:
         """Extract network interface information."""
-        interfaces: List[NetworkInterface] = []
+        interfaces: list[NetworkInterface] = []
         ifaces = facts.get("ansible_interfaces", [])
         if not isinstance(ifaces, list):
             return interfaces
@@ -168,18 +172,20 @@ class AnsibleFactAdapter(BaseAdapter):
             ipv4 = iface_data.get("ipv4", {}) or {}
             ipv6 = iface_data.get("ipv6", {}) or {}
 
-            interfaces.append(NetworkInterface(
-                name=iface_name,
-                mac_address=self._safe_get(iface_data, "macaddress", ""),
-                ipv4_addresses=[ipv4.get("address", "")] if ipv4.get("address") else [],
-                ipv6_addresses=[ipv6.get("address", "")] if ipv6.get("address") else [],
-                speed_mbps=self._safe_int(iface_data, "speed", None),
-                is_up=self._safe_get(iface_data, "active", True),
-                is_virtual=self._safe_get(iface_data, "type", "") in ("bridge", "bond", "vlan", "dummy"),
-            ))
+            interfaces.append(
+                NetworkInterface(
+                    name=iface_name,
+                    mac_address=self._safe_get(iface_data, "macaddress", ""),
+                    ipv4_addresses=[ipv4.get("address", "")] if ipv4.get("address") else [],
+                    ipv6_addresses=[ipv6.get("address", "")] if ipv6.get("address") else [],
+                    speed_mbps=self._safe_int(iface_data, "speed", None),
+                    is_up=self._safe_get(iface_data, "active", True),
+                    is_virtual=self._safe_get(iface_data, "type", "") in ("bridge", "bond", "vlan", "dummy"),
+                )
+            )
         return interfaces
 
-    def _to_software(self, facts: Dict[str, Any]) -> SoftwareEnvironment:
+    def _to_software(self, facts: dict[str, Any]) -> SoftwareEnvironment:
         """Extract software environment information."""
         packages = self._to_packages(facts)
         services = self._to_services(facts)
@@ -205,9 +211,9 @@ class AnsibleFactAdapter(BaseAdapter):
             firewall_enabled=bool(firewalld.get("status") == "running") if isinstance(firewalld, dict) else None,
         )
 
-    def _to_packages(self, facts: Dict[str, Any]) -> List[SoftwarePackage]:
+    def _to_packages(self, facts: dict[str, Any]) -> list[SoftwarePackage]:
         """Extract package information."""
-        packages: List[SoftwarePackage] = []
+        packages: list[SoftwarePackage] = []
 
         for pkg_key in ("ansible_packages", "packages"):
             pkg_data = facts.get(pkg_key, facts.get(pkg_key.replace("ansible_", "")))
@@ -215,49 +221,59 @@ class AnsibleFactAdapter(BaseAdapter):
                 for name, info_list in pkg_data.items():
                     if isinstance(info_list, list) and info_list:
                         info = info_list[0] if isinstance(info_list[0], dict) else {}
-                        packages.append(SoftwarePackage(
-                            name=str(name),
-                            version=str(info.get("version", "")),
-                            architecture=str(info.get("arch", "")),
-                            vendor=str(info.get("origin", "")) if info.get("origin") else None,
-                        ))
+                        packages.append(
+                            SoftwarePackage(
+                                name=str(name),
+                                version=str(info.get("version", "")),
+                                architecture=str(info.get("arch", "")),
+                                vendor=str(info.get("origin", "")) if info.get("origin") else None,
+                            )
+                        )
                     elif isinstance(info_list, dict):
-                        packages.append(SoftwarePackage(
-                            name=str(name),
-                            version=str(info_list.get("version", "")),
-                            architecture=str(info_list.get("arch", "")),
-                        ))
+                        packages.append(
+                            SoftwarePackage(
+                                name=str(name),
+                                version=str(info_list.get("version", "")),
+                                architecture=str(info_list.get("arch", "")),
+                            )
+                        )
             elif isinstance(pkg_data, list):
                 for pkg in pkg_data:
                     if isinstance(pkg, dict):
-                        packages.append(SoftwarePackage(
-                            name=str(pkg.get("name", "")),
-                            version=str(pkg.get("version", "")),
-                            architecture=str(pkg.get("arch", "")),
-                        ))
+                        packages.append(
+                            SoftwarePackage(
+                                name=str(pkg.get("name", "")),
+                                version=str(pkg.get("version", "")),
+                                architecture=str(pkg.get("arch", "")),
+                            )
+                        )
         return packages[:200]
 
-    def _to_services(self, facts: Dict[str, Any]) -> List[ServiceInfo]:
+    def _to_services(self, facts: dict[str, Any]) -> list[ServiceInfo]:
         """Extract service information."""
-        services: List[ServiceInfo] = []
+        services: list[ServiceInfo] = []
         svc_data = facts.get("ansible_services", {})
         if isinstance(svc_data, dict):
             for name, info in list(svc_data.items())[:100]:
                 if isinstance(info, dict):
-                    services.append(ServiceInfo(
-                        name=str(name),
-                        state=str(info.get("state", "unknown")),
-                        enabled=bool(info.get("enabled", False)),
-                    ))
+                    services.append(
+                        ServiceInfo(
+                            name=str(name),
+                            state=str(info.get("state", "unknown")),
+                            enabled=bool(info.get("enabled", False)),
+                        )
+                    )
                 elif isinstance(info, str):
-                    services.append(ServiceInfo(
-                        name=str(name),
-                        state=info,
-                        enabled=False,
-                    ))
+                    services.append(
+                        ServiceInfo(
+                            name=str(name),
+                            state=info,
+                            enabled=False,
+                        )
+                    )
         return services
 
-    def _to_security(self, facts: Dict[str, Any]) -> SecurityAssessment:
+    def _to_security(self, facts: dict[str, Any]) -> SecurityAssessment:
         """Extract security baseline information."""
         selinux = facts.get("ansible_selinux", {}) or {}
         firewalld = facts.get("ansible_firewalld", {}) or {}
@@ -269,25 +285,32 @@ class AnsibleFactAdapter(BaseAdapter):
             listening_services=[],
         )
 
-    def _to_uptime(self, facts: Dict[str, Any]) -> Optional[int]:
+    def _to_uptime(self, facts: dict[str, Any]) -> int | None:
         """Extract uptime in seconds."""
         boot_time = facts.get("ansible_date_time", {}).get("epoch", None)
         if boot_time:
             try:
                 import time
+
                 return int(time.time()) - int(boot_time)
             except (ValueError, TypeError):
                 pass
         return None
 
     @staticmethod
-    def _safe_get(data: Dict[str, Any], key: str, default: Any = "") -> Any:
+    def _safe_get(data: dict[str, Any], key: str, default: Any = "") -> Any:
         """Safely get a value from a dictionary."""
         value = data.get(key, default)
         return value if value is not None else default
 
+    @overload
     @staticmethod
-    def _safe_int(data: Dict[str, Any], key: str, default: int = 0) -> int:
+    def _safe_int(data: dict[str, Any], key: str, default: int = 0) -> int: ...
+    @overload
+    @staticmethod
+    def _safe_int(data: dict[str, Any], key: str, default: None) -> int | None: ...
+    @staticmethod
+    def _safe_int(data: dict[str, Any], key: str, default: int | None = 0) -> int | None:
         """Safely extract an integer value."""
         value = data.get(key)
         if value is None:
@@ -297,8 +320,14 @@ class AnsibleFactAdapter(BaseAdapter):
         except (ValueError, TypeError):
             return default
 
+    @overload
     @staticmethod
-    def _safe_float(data: Dict[str, Any], key: str, default: Optional[float] = None) -> Optional[float]:
+    def _safe_float(data: dict[str, Any], key: str, default: float = 0.0) -> float: ...
+    @overload
+    @staticmethod
+    def _safe_float(data: dict[str, Any], key: str, default: None) -> float | None: ...
+    @staticmethod
+    def _safe_float(data: dict[str, Any], key: str, default: float | None = 0.0) -> float | None:
         """Safely extract a float value."""
         value = data.get(key)
         if value is None:

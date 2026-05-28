@@ -1,9 +1,10 @@
 """Event system for OpsMind workflow tracking."""
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Optional
 
 
 class EventType(Enum):
@@ -48,8 +49,8 @@ class Event:
 
     type: EventType
     timestamp: datetime = field(default_factory=datetime.now)
-    data: Dict[str, Any] = field(default_factory=dict)
-    source: Optional[str] = None
+    data: dict[str, Any] = field(default_factory=dict)
+    source: str | None = None
 
 
 EventHandler = Callable[[Event], None]
@@ -69,8 +70,8 @@ class EventBus:
 
     def __init__(self) -> None:
         if not hasattr(self, "_handlers"):
-            self._handlers: Dict[EventType, List[EventHandler]] = {}
-            self._history: List[Event] = []
+            self._handlers: dict[EventType, list[EventHandler]] = {}
+            self._history: list[Event] = []
 
     def subscribe(self, event_type: EventType, handler: EventHandler) -> None:
         """Subscribe to a specific event type."""
@@ -93,11 +94,11 @@ class EventBus:
             except Exception:
                 pass  # Prevent handler errors from breaking the chain
 
-    def emit_simple(self, event_type: EventType, data: Optional[Dict[str, Any]] = None) -> None:
+    def emit_simple(self, event_type: EventType, data: dict[str, Any] | None = None) -> None:
         """Emit a simple event with just type and optional data."""
         self.emit(Event(type=event_type, data=data or {}))
 
-    def get_history(self, event_type: Optional[EventType] = None) -> List[Event]:
+    def get_history(self, event_type: EventType | None = None) -> list[Event]:
         """Get event history, optionally filtered by type."""
         if event_type:
             return [e for e in self._history if e.type == event_type]

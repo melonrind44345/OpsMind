@@ -8,13 +8,11 @@ import os
 import platform
 import subprocess
 import time
-from typing import Any, Dict, List, Optional
 
 from opsmind.core.events import EventBus, EventType
 from opsmind.discovery.engines.base import BaseDiscoveryEngine
 from opsmind.schemas.discovery import (
     CPUInfo,
-    ConfidenceLevel,
     DataSource,
     DiscoveryMethod,
     DiscoveryResult,
@@ -44,6 +42,7 @@ class NativeDiscoveryEngine(BaseDiscoveryEngine):
         """Native engine is always available (uses Python stdlib + psutil)."""
         try:
             import psutil  # noqa: F401
+
             return True
         except ImportError:
             return False
@@ -62,9 +61,12 @@ class NativeDiscoveryEngine(BaseDiscoveryEngine):
         start_time = time.time()
 
         if host != "localhost":
-            self.event_bus.emit_simple(EventType.WARNING, {
-                "message": f"Native engine can only discover localhost, not '{host}'",
-            })
+            self.event_bus.emit_simple(
+                EventType.WARNING,
+                {
+                    "message": f"Native engine can only discover localhost, not '{host}'",
+                },
+            )
             return self._discover_localhost()
 
         # CPU info
@@ -79,37 +81,39 @@ class NativeDiscoveryEngine(BaseDiscoveryEngine):
         mem = psutil.virtual_memory()
         swap = psutil.swap_memory()
         memory_info = MemoryInfo(
-            total_gb=round(mem.total / (1024 ** 3), 2),
-            available_gb=round(mem.available / (1024 ** 3), 2),
-            swap_total_gb=round(swap.total / (1024 ** 3), 2),
-            swap_available_gb=round(swap.free / (1024 ** 3), 2),
+            total_gb=round(mem.total / (1024**3), 2),
+            available_gb=round(mem.available / (1024**3), 2),
+            swap_total_gb=round(swap.total / (1024**3), 2),
+            swap_available_gb=round(swap.free / (1024**3), 2),
         )
 
         # Disk info
-        disks: List[DiskInfo] = []
+        disks: list[DiskInfo] = []
         for part in psutil.disk_partitions():
             try:
                 usage = psutil.disk_usage(part.mountpoint)
-                disks.append(DiskInfo(
-                    device=part.device,
-                    mount_point=part.mountpoint,
-                    filesystem=part.fstype,
-                    total_gb=round(usage.total / (1024 ** 3), 2),
-                    used_gb=round(usage.used / (1024 ** 3), 2),
-                    available_gb=round(usage.free / (1024 ** 3), 2),
-                    mount_options=part.opts.split(",") if part.opts else [],
-                ))
+                disks.append(
+                    DiskInfo(
+                        device=part.device,
+                        mount_point=part.mountpoint,
+                        filesystem=part.fstype,
+                        total_gb=round(usage.total / (1024**3), 2),
+                        used_gb=round(usage.used / (1024**3), 2),
+                        available_gb=round(usage.free / (1024**3), 2),
+                        mount_options=part.opts.split(",") if part.opts else [],
+                    )
+                )
             except PermissionError:
                 continue
 
         # Network info
-        net_ifaces: List[NetworkInterface] = []
+        net_ifaces: list[NetworkInterface] = []
         net_addrs = psutil.net_if_addrs()
         net_stats = psutil.net_if_stats()
 
         for name, addrs in net_addrs.items():
-            ipv4: List[str] = []
-            ipv6: List[str] = []
+            ipv4: list[str] = []
+            ipv6: list[str] = []
             mac = ""
 
             for addr in addrs:
@@ -121,13 +125,15 @@ class NativeDiscoveryEngine(BaseDiscoveryEngine):
                     mac = addr.address
 
             stats = net_stats.get(name)
-            net_ifaces.append(NetworkInterface(
-                name=name,
-                mac_address=mac,
-                ipv4_addresses=ipv4,
-                ipv6_addresses=ipv6,
-                is_up=stats.isup if stats else True,
-            ))
+            net_ifaces.append(
+                NetworkInterface(
+                    name=name,
+                    mac_address=mac,
+                    ipv4_addresses=ipv4,
+                    ipv6_addresses=ipv6,
+                    is_up=stats.isup if stats else True,
+                )
+            )
 
         hardware = HardwareSpec(
             hostname=platform.node(),
@@ -175,7 +181,7 @@ class NativeDiscoveryEngine(BaseDiscoveryEngine):
         )
         return result
 
-    def discover_group(self, hosts: List[str], parallel: bool = True) -> DiscoveryResult:
+    def discover_group(self, hosts: list[str], parallel: bool = True) -> DiscoveryResult:
         """Native engine can only discover localhost."""
         results = DiscoveryResult()
         for host in hosts:
@@ -193,9 +199,9 @@ class NativeDiscoveryEngine(BaseDiscoveryEngine):
         """Internal localhost discovery."""
         return self.discover_host("localhost")
 
-    def _collect_packages(self) -> List[SoftwarePackage]:
+    def _collect_packages(self) -> list[SoftwarePackage]:
         """Collect installed packages using system package manager."""
-        packages: List[SoftwarePackage] = []
+        packages: list[SoftwarePackage] = []
 
         if platform.system() != "Linux":
             return packages
@@ -215,11 +221,13 @@ class NativeDiscoveryEngine(BaseDiscoveryEngine):
                             name = parts[0]
                             version = parts[1] if len(parts) > 1 else ""
                             arch = parts[2] if len(parts) > 2 else ""
-                            packages.append(SoftwarePackage(
-                                name=name,
-                                version=version,
-                                architecture=arch,
-                            ))
+                            packages.append(
+                                SoftwarePackage(
+                                    name=name,
+                                    version=version,
+                                    architecture=arch,
+                                )
+                            )
         except (FileNotFoundError, subprocess.TimeoutExpired, Exception):
             pass
 

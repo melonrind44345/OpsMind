@@ -1,7 +1,7 @@
 """Custom exceptions for OpsMind with error codes and severity levels."""
 
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class ErrorSeverity(Enum):
@@ -20,7 +20,7 @@ class OpsMindError(Exception):
         message: str,
         code: str = "OPSMIND_ERR",
         severity: ErrorSeverity = ErrorSeverity.ERROR,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
         recoverable: bool = False,
     ) -> None:
         self.message = message
@@ -30,7 +30,7 @@ class OpsMindError(Exception):
         self.recoverable = recoverable
         super().__init__(self.message)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "code": self.code,
             "message": self.message,
@@ -48,7 +48,7 @@ class DiscoveryError(OpsMindError):
         message: str,
         code: str = "DISC_ERR",
         severity: ErrorSeverity = ErrorSeverity.ERROR,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
         recoverable: bool = True,
     ) -> None:
         super().__init__(message, code, severity, details, recoverable)
@@ -62,7 +62,7 @@ class AnsibleError(DiscoveryError):
         message: str,
         code: str = "ANS_ERR",
         severity: ErrorSeverity = ErrorSeverity.ERROR,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
         recoverable: bool = True,
     ) -> None:
         super().__init__(message, code, severity, details, recoverable)
@@ -74,7 +74,7 @@ class AnsibleNotAvailableError(AnsibleError):
     def __init__(
         self,
         message: str = "Ansible is not available on this system",
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(
             message=message,
@@ -91,8 +91,8 @@ class SSHConnectionError(AnsibleError):
     def __init__(
         self,
         host: str,
-        message: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None,
+        message: str | None = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(
             message=message or f"SSH connection failed to {host}",
@@ -111,7 +111,7 @@ class NativeDiscoveryError(DiscoveryError):
         message: str,
         code: str = "NAT_ERR",
         severity: ErrorSeverity = ErrorSeverity.WARNING,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
         recoverable: bool = True,
     ) -> None:
         super().__init__(message, code, severity, details, recoverable)
@@ -125,7 +125,7 @@ class AssessmentError(OpsMindError):
         message: str,
         code: str = "ASMT_ERR",
         severity: ErrorSeverity = ErrorSeverity.ERROR,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
         recoverable: bool = False,
     ) -> None:
         super().__init__(message, code, severity, details, recoverable)
@@ -139,7 +139,7 @@ class ReportGenerationError(OpsMindError):
         message: str,
         code: str = "REP_ERR",
         severity: ErrorSeverity = ErrorSeverity.ERROR,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
         recoverable: bool = True,
     ) -> None:
         super().__init__(message, code, severity, details, recoverable)
@@ -153,7 +153,7 @@ class RemediationError(OpsMindError):
         message: str,
         code: str = "REMD_ERR",
         severity: ErrorSeverity = ErrorSeverity.ERROR,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
         recoverable: bool = True,
     ) -> None:
         super().__init__(message, code, severity, details, recoverable)
@@ -167,7 +167,7 @@ class ValidationError(OpsMindError):
         message: str,
         code: str = "VAL_ERR",
         severity: ErrorSeverity = ErrorSeverity.WARNING,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
         recoverable: bool = True,
     ) -> None:
         super().__init__(message, code, severity, details, recoverable)
