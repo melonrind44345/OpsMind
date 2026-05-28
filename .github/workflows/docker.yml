@@ -26,6 +26,7 @@ concurrency:
 permissions:
   contents: read
   packages: write
+  security-events: write
 
 jobs:
   docker:
@@ -58,7 +59,9 @@ jobs:
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: |
+            ${{ steps.meta.outputs.tags }}
+            opsmind:ci-scan
           labels: ${{ steps.meta.outputs.labels }}
           load: ${{ github.event_name == 'pull_request' }}
           cache-from: type=gha
@@ -68,7 +71,7 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ghcr.io/${{ github.repository_owner }}/opsmind:sha-${{ github.sha }}
+          image-ref: opsmind:ci-scan
           format: "sarif"
           output: "trivy-results.sarif"
           severity: "HIGH,CRITICAL"

@@ -5,6 +5,9 @@ on:
     - cron: "37 1 * * 1"    # Every Monday at 09:37 Asia/Shanghai
   workflow_dispatch:          # Manual trigger
 
+permissions:
+  contents: read
+
 jobs:
   dependency-audit:
     name: "Dependency Audit"
@@ -77,6 +80,9 @@ jobs:
   docker-scan:
     name: "Docker Image Scan"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@v4
 
