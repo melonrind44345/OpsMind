@@ -96,7 +96,14 @@ jobs:
           --no-header
 
       - name: Rename coverage data for combining
-        run: mv .coverage .coverage-py${{ matrix.python-version }}
+        if: always()
+        run: |
+          if [ -f .coverage ]; then
+            mv .coverage .coverage-py${{ matrix.python-version }}
+            echo "Renamed .coverage to .coverage-py${{ matrix.python-version }}"
+          else
+            echo "WARNING: .coverage file not found — tests may have failed to produce coverage data"
+          fi
 
       - name: Upload test results
         if: always()
@@ -130,23 +137,82 @@ jobs:
           pattern: test-results-*
           merge-multiple: true
 
+      - name: Debug downloaded artifacts
+        run: |
+          echo "=== Files in working directory ==="
+          ls -la
+          echo "=== Coverage files ==="
+          ls -la .coverage* coverage-* 2>/dev/null || echo "(none found)"
+
       - name: Combine coverage data
         id: coverage
         run: |
           pip install coverage
           # Combine .coverage data files from all Python versions
           if ls .coverage-py* 1>/dev/null 2>&1; then
+            echo "Found .coverage data files, combining..."
             coverage combine .coverage-py*
+            coverage report --fail-under=${{ env.COVERAGE_THRESHOLD }} --show-missing
+            coverage html -d htmlcov
+            coverage json -o coverage.json
+          elif ls coverage-*.xml 1>/dev/null 2>&1; then
+            echo "No .coverage data files found. Generating report from XML coverage files..."
+            python -c "
+          import json, glob, sys
+          from xml.etree import ElementTree as ET
+
+          threshold = float('${{ env.COVERAGE_THRESHOLD }}')
+          xml_files = sorted(glob.glob('coverage-*.xml'))
+          print(f'Found {len(xml_files)} XML coverage file(s)')
+
+          best = None
+          for f in xml_files:
+              root = ET.parse(f).getroot()
+              lv = int(root.get('lines-valid', 0))
+              lc = int(root.get('lines-covered', 0))
+              bv = int(root.get('branches-valid', 0))
+              bc = int(root.get('branches-covered', 0))
+              if best is None or lv > best['num_statements']:
+                  best = {
+                      'num_statements': lv,
+                      'covered_lines': lc,
+                      'missing_lines': lv - lc,
+                      'num_branches': bv,
+                      'covered_branches': bc,
+                      'missing_branches': bv - bc,
+                  }
+
+          if best is None:
+              print('ERROR: Could not parse any coverage XML files')
+              sys.exit(1)
+
+          pct = round(best['covered_lines'] / best['num_statements'] * 100, 1) if best['num_statements'] > 0 else 0.0
+          best['percent_covered'] = pct
+          best['excluded_lines'] = 0
+          best['num_partial_branches'] = 0
+
+          print(f'  Statements : {best[\"num_statements\"]}')
+          print(f'  Covered    : {best[\"covered_lines\"]}')
+          print(f'  Missing    : {best[\"missing_lines\"]}')
+          print(f'  Coverage   : {pct}%')
+          print(f'  Threshold  : {threshold}%')
+
+          with open('coverage.json', 'w') as fp:
+              json.dump({'totals': best, 'files': {}}, fp, indent=2)
+
+          if pct < threshold:
+              print(f'FAIL: Coverage {pct}% is below threshold {threshold}%')
+              sys.exit(1)
+          else:
+              print(f'PASS: Coverage {pct}% meets threshold {threshold}%')
+          "
           else
-            echo "WARNING: No .coverage data files found, generating report from XML..."
-            coverage combine 2>/dev/null || true
+            echo "ERROR: No coverage data found — no .coverage-py* or coverage-*.xml files"
+            echo "Files in working directory:"
+            ls -la
+            exit 1
           fi
-          # Generate terminal report (fails if under threshold)
-          coverage report --fail-under=${{ env.COVERAGE_THRESHOLD }} --show-missing
-          # Generate HTML and JSON reports
-          coverage html -d htmlcov
-          coverage json -o coverage.json
-          # Extract detailed metrics
+          # Extract detailed metrics from coverage.json
           COV_PCT=$(python -c "import json; d=json.load(open('coverage.json'))['totals']; print(d['percent_covered'])")
           echo "cov_pct=${COV_PCT}" >> $GITHUB_OUTPUT
           echo "num_statements=$(python -c "import json; print(json.load(open('coverage.json'))['totals']['num_statements'])")" >> $GITHUB_OUTPUT
@@ -191,16 +257,16 @@ jobs:
           stmts = d['num_statements']
           miss = d['missing_lines']
           cov = d['covered_lines']
-          threshold = float('\${{ env.COVERAGE_THRESHOLD }}')
+          threshold = float('${{ env.COVERAGE_THRESHOLD }}')
           status = '✅' if pct >= threshold else '❌'
-          print(f'### {status} Coverage: {pct:.1f}% (threshold: {threshold:.0f}%)', file=open('\$GITHUB_STEP_SUMMARY', 'a'))
-          print(f'', file=open('\$GITHUB_STEP_SUMMARY', 'a'))
-          print(f'| Metric | Value |', file=open('\$GITHUB_STEP_SUMMARY', 'a'))
-          print(f'|--------|-------|', file=open('\$GITHUB_STEP_SUMMARY', 'a'))
-          print(f'| Statements | {stmts} |', file=open('\$GITHUB_STEP_SUMMARY', 'a'))
-          print(f'| Covered | {cov} |', file=open('\$GITHUB_STEP_SUMMARY', 'a'))
-          print(f'| Missing | {miss} |', file=open('\$GITHUB_STEP_SUMMARY', 'a'))
-          print(f'| Branch coverage | {d[\"percent_covered\"]:.1f}% |', file=open('\$GITHUB_STEP_SUMMARY', 'a'))
+          print(f'### {status} Coverage: {pct:.1f}% (threshold: {threshold:.0f}%)', file=open('$GITHUB_STEP_SUMMARY', 'a'))
+          print(f'', file=open('$GITHUB_STEP_SUMMARY', 'a'))
+          print(f'| Metric | Value |', file=open('$GITHUB_STEP_SUMMARY', 'a'))
+          print(f'|--------|-------|', file=open('$GITHUB_STEP_SUMMARY', 'a'))
+          print(f'| Statements | {stmts} |', file=open('$GITHUB_STEP_SUMMARY', 'a'))
+          print(f'| Covered | {cov} |', file=open('$GITHUB_STEP_SUMMARY', 'a'))
+          print(f'| Missing | {miss} |', file=open('$GITHUB_STEP_SUMMARY', 'a'))
+          print(f'| Branch coverage | {d[\"percent_covered\"]:.1f}% |', file=open('$GITHUB_STEP_SUMMARY', 'a'))
             "
           fi
 
