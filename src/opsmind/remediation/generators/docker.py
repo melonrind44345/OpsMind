@@ -54,7 +54,7 @@ class DockerGenerator:
             script_path = os.path.join(host_dir, "build.sh")
             with open(script_path, "w") as f:
                 f.write(script)
-            os.chmod(script_path, 0o755)
+            os.chmod(script_path, 0o700)
             generated.append(script_path)
 
         return generated

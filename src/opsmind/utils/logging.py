@@ -44,7 +44,7 @@ class OpsMindLogger:
         self.logger.addHandler(console_handler)
 
         # File handler (always JSON)
-        log_dir = Path("/tmp/opsmind")
+        log_dir = Path(".opsmind/logs")
         log_dir.mkdir(parents=True, exist_ok=True)
         file_handler = logging.FileHandler(log_dir / "opsmind.log")
         file_handler.setFormatter(StructuredFormatter())

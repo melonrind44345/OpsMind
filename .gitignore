@@ -8,6 +8,9 @@ build/
 .env
 .venv/
 
+# OpsMind runtime
+.opsmind/
+
 # OpsMind generated artifacts
 opsmind_report.*
 opsmind_demo_report.*
