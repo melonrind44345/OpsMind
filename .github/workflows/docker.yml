@@ -35,6 +35,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Use the docker-container driver so the builder supports exporting
+      # cache blobs to the GitHub Actions cache backend (type=gha).  The
+      # default "docker" driver cannot export cache.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
@@ -66,6 +74,17 @@ jobs:
           load: ${{ github.event_name == 'pull_request' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # Disable provenance attestation unless you need SLSA — it adds build
+          # time and has been known to cause intermittent buildx failures when
+          # the builder environment doesn't support the attestation backend.
+          provenance: false
+
+      # Quick smoke test to catch entry-point failures before scanning.
+      - name: Smoke test image
+        if: github.event_name == 'pull_request'
+        run: |
+          docker run --rm opsmind:ci-scan --version
+          docker run --rm opsmind:ci-scan --help
 
       - name: Scan image with Trivy
         if: github.event_name == 'pull_request'
