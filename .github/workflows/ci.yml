@@ -40,7 +40,7 @@ jobs:
           - check: mypy
             run: mypy $PACKAGE_DIR/
           - check: bandit
-            run: bandit -r $PACKAGE_DIR/
+            run: bandit -r $PACKAGE_DIR/ -ll
     steps:
       - uses: actions/checkout@v4
 
