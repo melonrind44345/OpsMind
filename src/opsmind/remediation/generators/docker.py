@@ -3,6 +3,7 @@
 import os
 from datetime import datetime
 
+from opsmind import __version__
 from opsmind.schemas.assessment import AssessmentResult, ComplexityLevel
 
 
@@ -101,7 +102,7 @@ FROM {base_image}
 
 LABEL opsmind.host="{result.host}" \\
       opsmind.generated="{datetime.now().strftime("%Y-%m-%d")}" \\
-      opsmind.version="0.1.0" \\
+      opsmind.version="{__version__}" \\
       description="Containerized {result.host} - {result.feasibility.complexity.value} migration"
 
 # System dependencies

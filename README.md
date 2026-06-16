@@ -1,4 +1,4 @@
-# 🧠 OpsMind v0.1.0
+# 🧠 OpsMind v1.0.0
 
 **Ansible-Driven Modernization Assessment Platform**
 
@@ -25,7 +25,7 @@ OpsMind is a legacy system modernization assessment platform that uses Ansible a
 
 ```bash
 # Clone and install
-git clone https://github.com/opsmind/opsmind.git
+git clone https://github.com/melonrind44345/opsmind.git
 cd opsmind
 pip install -e .
 
@@ -211,25 +211,28 @@ pytest tests/ -m slow -v
 
 ## 🎯 Project Roadmap
 
-### v0.1.0 (Current) — Ansible-Driven MVP
-- ✅ Ansible-based system discovery
-- ✅ Multi-dimensional assessment engine
-- ✅ Professional report generation (MD/JSON/HTML)
-- ✅ Docker and migration plan generation
-- ✅ Error fallback and graceful degradation
-- ✅ Demo mode with mock data
+### v1.0.0 (Current) — Production Release
+- ✅ Ansible-based system discovery with multi-engine fallback
+- ✅ Multi-dimensional assessment engine (Hardware, Software, Config, Security)
+- ✅ Professional report generation (Markdown/JSON/HTML)
+- ✅ Docker artifact and migration plan generation
+- ✅ Full CI/CD pipeline (Quality, Test Matrix, Coverage, Build, Release)
+- ✅ Docker multi-stage production image with GHCR publishing
+- ✅ Weekly security auditing (SAST, dependency scan, container scan)
+- ✅ FastAPI web API server for K8s deployment
+- ✅ Demo mode with mock data for instant evaluation
 
-### v0.2.0 — Enhanced Assessment
-- CI/CD pipeline integration
-- Custom assessment rules
+### v1.1.0 — Enhanced Capabilities
+- Custom assessment rules engine
 - Batch assessment and comparison
-- Export to PDF
-
-### v0.3.0 — Production Features
+- PDF report export
 - Ansible Tower/AWX integration
-- Real-time discovery monitoring
+
+### v1.2.0 — Platform Features
+- Real-time discovery monitoring dashboard
 - Custom report templates
-- API service mode
+- Multi-cluster assessment
+- Plugin architecture for custom engines
 
 ---
 

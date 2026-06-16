@@ -20,11 +20,12 @@ from rich.progress import (
 )
 from rich.table import Table
 
+from opsmind import __version__
 from opsmind.core.engine import OpsMindEngine
 
 app = typer.Typer(
     name="opsmind",
-    help="[bold blue]OpsMind v0.1.0[/] - Ansible-Driven Modernization Platform",
+    help=f"[bold blue]OpsMind v{__version__}[/] - Ansible-Driven Modernization Platform",
     no_args_is_help=True,
     add_completion=False,
 )
@@ -46,7 +47,7 @@ def _version_callback(value: bool) -> None:
     if value:
         console.print(
             Panel(
-                "[bold blue]OpsMind[/] [bold]v0.1.0[/]\nAnsible-Driven Modernization Platform\nLicense: MIT",
+                f"[bold blue]OpsMind[/] [bold]v{__version__}[/]\nAnsible-Driven Modernization Platform\nLicense: MIT",
                 title="Version",
                 border_style="blue",
             )
@@ -810,6 +811,49 @@ def demo() -> None:
             title="Summary",
             border_style="green",
         )
+    )
+
+
+@app.command()
+def web(
+    host: str = typer.Option(
+        "0.0.0.0",
+        "--host",
+        "-h",
+        help="Bind host",
+    ),
+    port: int = typer.Option(
+        8080,
+        "--port",
+        "-p",
+        help="Bind port",
+    ),
+    reload: bool = typer.Option(
+        False,
+        "--reload",
+        help="Enable auto-reload (development only)",
+    ),
+) -> None:
+    """Start the OpsMind web API server (K8s deployment entrypoint)."""
+    import uvicorn
+
+    console.print(
+        Panel(
+            f"[bold blue]OpsMind Web Server[/]\n\n"
+            f"Listening on: [green]http://{host}:{port}[/]\n"
+            f"Health check: [green]http://{host}:{port}/health[/]\n"
+            f"API docs:     [green]http://{host}:{port}/docs[/]",
+            title="Web Server",
+            border_style="blue",
+        )
+    )
+
+    uvicorn.run(
+        "opsmind.web.app:app",
+        host=host,
+        port=port,
+        reload=reload,
+        log_level="info",
     )
 
 

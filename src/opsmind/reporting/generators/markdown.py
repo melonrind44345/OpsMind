@@ -3,6 +3,7 @@
 import os
 from datetime import datetime
 
+from opsmind import __version__
 from opsmind.reporting.generators.base import BaseReportGenerator
 from opsmind.schemas.assessment import AssessmentResult, ComplexityLevel
 from opsmind.schemas.report import DetailLevel, ReportData, ReportMetadata, ReportSection
@@ -50,7 +51,7 @@ class MarkdownReportGenerator(BaseReportGenerator):
             metadata=ReportMetadata(
                 title="OpsMind Containerization Assessment Report",
                 generated_at=datetime.now(),
-                tool_version="0.1.0",
+                tool_version=__version__,
                 total_hosts=len(assessment_results),
             ),
             executive_summary=exec_summary,
@@ -125,7 +126,7 @@ class MarkdownReportGenerator(BaseReportGenerator):
             f"  - Moderate: {moderate}\n"
             f"  - Complex: {complex_count}\n"
             f"  - Blocker: {blocker}\n\n"
-            f"This assessment was performed using OpsMind v0.1.0 with data "
+            f"This assessment was performed using OpsMind v{__version__} with data "
             f"collected via Ansible discovery. Each host is evaluated across "
             f"four dimensions: hardware compatibility, software support, "
             f"configuration complexity, and security baseline."

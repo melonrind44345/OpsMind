@@ -3,6 +3,7 @@
 import os
 from datetime import datetime
 
+from opsmind import __version__
 from opsmind.reporting.generators.base import BaseReportGenerator
 from opsmind.schemas.assessment import AssessmentResult, ComplexityLevel
 from opsmind.schemas.report import DetailLevel, ReportData, ReportMetadata
@@ -23,7 +24,7 @@ class HTMLReportGenerator(BaseReportGenerator):
         metadata = ReportMetadata(
             title="OpsMind Containerization Assessment Report",
             generated_at=datetime.now(),
-            tool_version="0.1.0",
+            tool_version=__version__,
             total_hosts=len(assessment_results),
         )
 

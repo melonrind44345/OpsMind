@@ -1,3 +1,4 @@
+from opsmind import __version__
 """Pydantic models for report data."""
 
 from datetime import datetime
@@ -40,7 +41,7 @@ class ReportMetadata(BaseModel):
 
     title: str = Field(default="OpsMind Assessment Report", description="Report title")
     generated_at: datetime = Field(default_factory=datetime.now, description="When report was generated")
-    tool_version: str = Field(default="0.1.0", description="OpsMind version")
+    tool_version: str = Field(default=__version__, description="OpsMind version")
     data_source: str = Field(default="", description="Source of the data")
     confidence: str = Field(default="", description="Overall confidence level")
     total_hosts: int = Field(default=0, description="Number of hosts in report")
