@@ -3,6 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
+from opsmind import __version__
 from opsmind.schemas.assessment import (
     AssessmentDimension,
     ComplexityLevel,
@@ -113,7 +114,7 @@ class TestReportSchemas:
     def test_report_metadata_defaults(self):
         meta = ReportMetadata()
         assert meta.title == "OpsMind Assessment Report"
-        assert meta.tool_version == "0.1.0"
+        assert meta.tool_version == __version__
         assert meta.total_hosts == 0
 
     def test_report_format_enum(self):
