@@ -6,9 +6,12 @@
 # Build:
 #   docker build -t opsmind:latest .
 #
-# Run:
+# Run (CLI mode):
 #   docker run --rm opsmind:latest --version
 #   docker run --rm opsmind:latest pipeline legacy-centos --method mock
+#
+# Run (Web server mode — K8s deployment):
+#   docker run --rm -p 8080:8080 opsmind:latest web
 # ============================================================================
 
 # ---- Build stage ----
@@ -19,6 +22,7 @@ ENV PIP_NO_CACHE_DIR=1 \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    python3-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -33,8 +37,9 @@ WORKDIR /build
 # Install the package into the venv — this places:
 #   packages   → /opt/venv/lib/python3.11/site-packages/
 #   entrypoint → /opt/venv/bin/opsmind
+# [web] extra includes fastapi + uvicorn for the web API server.
 RUN pip install --upgrade pip setuptools wheel \
-    && pip install .
+    && pip install ".[web]"
 
 # ---- Runtime stage ----
 FROM python:3.11-slim
@@ -44,7 +49,8 @@ LABEL org.opencontainers.image.description="Ansible-Driven Modernization Assessm
 LABEL org.opencontainers.image.source="https://github.com/melonrind44345/OpsMind"
 
 ENV PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    PATH="/opt/venv/bin:$PATH"
 
 # Runtime system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -62,13 +68,16 @@ COPY --from=builder /opt/venv /opt/venv
 # /usr/local/bin is already on PATH in the base image.
 RUN ln -s /opt/venv/bin/opsmind /usr/local/bin/opsmind
 
-# Verify the binary resolves (fail loudly at build time, not at run time).
+# Verify the binary and all dependencies resolve at build time.
 RUN opsmind --version
+RUN python -c "import uvicorn, fastapi; print(f'uvicorn {uvicorn.__version__}, fastapi {fastapi.__version__}')"
 
 # Create non-root user
 RUN useradd -m -s /bin/bash opsmind
 USER opsmind
 WORKDIR /home/opsmind
 
+# Default: show help (CLI mode).
+# For K8s web deployment, override CMD to: ["opsmind", "web"]
 ENTRYPOINT ["opsmind"]
 CMD ["--help"]
