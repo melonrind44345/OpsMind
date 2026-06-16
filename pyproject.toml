@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "opsmind"
+name = "opsmind-tools"
 version = "1.0.0"
 description = "Ansible-driven modernization assessment and transformation platform for legacy enterprise systems"
 readme = "README.md"
@@ -63,7 +63,7 @@ docs = [
 
 [project.urls]
 Homepage = "https://opsmind.dev"
-Repository = "https://github.com/melonrind44345/opsmind"
+Repository = "https://github.com/melonrind44345/OpsMind"
 
 [project.scripts]
 opsmind = "opsmind.cli.main:app"

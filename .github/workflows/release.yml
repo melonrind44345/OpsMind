@@ -57,7 +57,7 @@ jobs:
     needs: build
     environment:
       name: pypi
-      url: https://pypi.org/p/opsmind
+      url: https://pypi.org/p/opsmind-tools
     steps:
       - name: Download dist artifacts
         uses: actions/download-artifact@v4
