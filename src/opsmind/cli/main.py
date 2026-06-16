@@ -835,7 +835,15 @@ def web(
     ),
 ) -> None:
     """Start the OpsMind web API server (K8s deployment entrypoint)."""
-    import uvicorn
+    try:
+        import uvicorn
+    except ImportError:
+        err_console.print(
+            "[bold red]Missing web dependencies.[/]\n\n"
+            "The web server requires additional packages. Install them with:\n\n"
+            "  [bold]pip install opsmind-tools[web][/]\n"
+        )
+        raise typer.Exit(code=1)
 
     console.print(
         Panel(
