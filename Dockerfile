@@ -3,15 +3,17 @@
 # Stage 1: Build virtualenv with all dependencies
 # Stage 2: Minimal runtime image
 #
-# Build:
+# [本地测试] 构建与运行（镜像仅存本地，不推送远程仓库）
 #   docker build -t opsmind:latest .
 #
-# Run (CLI mode):
+# [本地测试] CLI 模式
 #   docker run --rm opsmind:latest --version
 #   docker run --rm opsmind:latest pipeline legacy-centos --method mock
 #
-# Run (Web server mode — K8s deployment):
+# [本地测试] Web 服务模式（K8s 部署同此镜像）
 #   docker run --rm -p 8080:8080 opsmind:latest web
+#
+# ⚠️ 本地测试请勿使用 --push，否则会尝试推送到 library/opsmind 导致 401 错误
 # ============================================================================
 
 # ---- Build stage ----
