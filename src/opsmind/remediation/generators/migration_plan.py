@@ -1,9 +1,9 @@
-from opsmind import __version__
 """Migration plan generator - creates actionable migration roadmaps."""
 
 import os
 from datetime import datetime
 
+from opsmind import __version__
 from opsmind.schemas.assessment import AssessmentResult
 
 

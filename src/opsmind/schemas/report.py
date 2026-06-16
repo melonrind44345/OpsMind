@@ -1,4 +1,3 @@
-from opsmind import __version__
 """Pydantic models for report data."""
 
 from datetime import datetime
@@ -7,6 +6,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from opsmind import __version__
 from opsmind.schemas.assessment import AssessmentResult
 
 
