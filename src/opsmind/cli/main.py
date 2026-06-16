@@ -817,7 +817,7 @@ def demo() -> None:
 @app.command()
 def web(
     host: str = typer.Option(
-        "0.0.0.0",
+        "0.0.0.0",  # nosec B104 — intentional: K8s/container deployments require binding all interfaces
         "--host",
         "-h",
         help="Bind host",
