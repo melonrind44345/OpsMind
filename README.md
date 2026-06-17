@@ -1,4 +1,4 @@
-# 🧠 OpsMind v1.0.0
+# 🧠 OpsMind v1.0.2
 
 **Ansible-Driven Modernization Assessment Platform**
 
@@ -211,7 +211,7 @@ pytest tests/ -m slow -v
 
 ## 🎯 Project Roadmap
 
-### v1.0.0 (Current) — Production Release
+### v1.0.2 (Current) — Production Release
 - ✅ Ansible-based system discovery with multi-engine fallback
 - ✅ Multi-dimensional assessment engine (Hardware, Software, Config, Security)
 - ✅ Professional report generation (Markdown/JSON/HTML)
