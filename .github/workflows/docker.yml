@@ -67,9 +67,7 @@ jobs:
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
-          tags: |
-            ${{ steps.meta.outputs.tags }}
-            opsmind:ci-scan
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           load: ${{ github.event_name == 'pull_request' }}
           cache-from: type=gha
@@ -78,6 +76,15 @@ jobs:
           # time and has been known to cause intermittent buildx failures when
           # the builder environment doesn't support the attestation backend.
           provenance: false
+
+      # Tag a short local alias for smoke tests and scanning (PR only — never pushed).
+      - name: Tag image for local testing
+        if: github.event_name == 'pull_request'
+        run: |
+          TAGS="${{ steps.meta.outputs.tags }}"
+          FIRST_TAG=$(echo "$TAGS" | head -n1)
+          echo "Tagging $FIRST_TAG → opsmind:ci-scan"
+          docker tag "$FIRST_TAG" opsmind:ci-scan
 
       # Quick smoke test to catch entry-point failures before scanning.
       - name: Smoke test image
