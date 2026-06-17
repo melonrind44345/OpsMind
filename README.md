@@ -1,4 +1,4 @@
-# 🧠 OpsMind v1.0.2
+# 🧠 OpsMind v1.0.5
 
 **Ansible-Driven Modernization Assessment Platform**
 
