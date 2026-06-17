@@ -6,7 +6,9 @@ Tests the full HTTP request/response cycle with actual engine execution.
 import json
 
 import pytest
-from fastapi.testclient import TestClient
+
+pytest.importorskip("fastapi", reason="FastAPI not installed — install with `pip install opsmind-tools[web]`")
+from fastapi.testclient import TestClient  # noqa: E402
 
 from opsmind.web.app import app
 

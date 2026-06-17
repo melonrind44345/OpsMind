@@ -9,7 +9,9 @@ from datetime import datetime
 from unittest.mock import patch
 
 import pytest
-from fastapi.testclient import TestClient
+
+pytest.importorskip("fastapi", reason="FastAPI not installed — install with `pip install opsmind-tools[web]`")
+from fastapi.testclient import TestClient  # noqa: E402
 
 from opsmind import __version__
 from opsmind.core.exceptions import (

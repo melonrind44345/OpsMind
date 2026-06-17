@@ -48,7 +48,7 @@ runs:
     - name: Install project (editable)
       if: inputs.install-project == 'true'
       shell: bash
-      run: pip install -e .
+      run: pip install -e ".[web]"
 
     - name: Install dev dependencies
       if: inputs.install-dev == 'true'
